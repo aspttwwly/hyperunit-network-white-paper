@@ -1,0 +1,3800 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="HyperUnit Network 白皮书配套案例：银行账户周余额发布前校验。使用合成数据展示责任边界、带类型输入、校验 Claim、人工 Decision 与现实验证。">
+  <meta name="author" content="HyperUnit Network">
+  <meta name="version" content="V0.3">
+  <meta name="hyperunit-editor-mode" content="editable">
+  <meta name="hyperunit-artifact-role" content="authoritative-public-example-source">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'">
+  <title>银行账户周余额发布前校验｜HyperUnit 配套案例</title>
+  <style>
+    :root {
+      --canvas: #f7f3eb;
+      --paper: #fffdf9;
+      --ink: #233032;
+      --muted: #5b686b;
+      --line: #cbd2d0;
+      --teal: #2a6f6b;
+      --teal-dark: #185450;
+      --teal-soft: #dce9e6;
+      --gold: #8a5a18;
+      --gold-line: #b77a25;
+      --gold-soft: #f1e3c8;
+      --sage: #486a59;
+      --sage-soft: #e0e9e2;
+      --brick: #86452f;
+      --brick-soft: #ecd8d0;
+      --slate: #4d5b61;
+      --slate-soft: #ecefee;
+      --shadow: 0 18px 48px rgba(35, 48, 50, .09);
+      --radius: 22px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 2%, rgba(183, 122, 37, .12), transparent 24rem),
+        radial-gradient(circle at 92% 14%, rgba(42, 111, 107, .13), transparent 28rem),
+        var(--canvas);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, select { font: inherit; }
+    a { color: var(--teal-dark); text-underline-offset: .2em; }
+    a:hover { color: var(--gold); }
+    :focus-visible { outline: 3px solid var(--gold-line); outline-offset: 3px; }
+    .skip-link {
+      position: fixed; top: 10px; left: 10px; z-index: 100;
+      padding: 10px 14px; background: var(--ink); color: white;
+      border-radius: 10px; transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: none; }
+    .sr-only {
+      position: absolute !important; width: 1px !important; height: 1px !important;
+      padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;
+    }
+    .shell { width: min(var(--max), calc(100% - 36px)); margin-inline: auto; }
+
+    .editor-dock {
+      position: sticky; top: 0; z-index: 1000;
+      border-bottom: 1px solid rgba(77, 91, 97, .26);
+      background: rgba(255, 253, 249, .96); box-shadow: 0 12px 30px rgba(35, 48, 50, .09);
+      backdrop-filter: blur(16px);
+    }
+    .editor-dock-inner { width: min(1440px, calc(100% - 24px)); margin-inline: auto; }
+    .editor-dock-bar {
+      display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 0;
+    }
+    .editor-dock-title { display: grid; min-width: 180px; margin-right: auto; line-height: 1.25; }
+    .editor-dock-title strong { font-size: .86rem; letter-spacing: .04em; }
+    .editor-dock-title small { color: var(--muted); font-size: .72rem; }
+    .editor-controls {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      padding: 0 0 10px;
+    }
+    .editor-dock.is-collapsed .editor-controls { display: none; }
+    .tool-group {
+      display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px;
+      padding: 5px; border: 1px solid var(--line); border-radius: 12px; background: white;
+    }
+    .tool-group-label { padding: 0 4px; color: var(--muted); font-size: .68rem; font-weight: 850; }
+    .tool-button, .tool-select {
+      min-height: 38px; border: 1px solid transparent; border-radius: 9px;
+      color: var(--ink); background: var(--slate-soft); font: inherit; font-size: .78rem; font-weight: 780;
+    }
+    .tool-button { min-width: 38px; padding: 7px 10px; cursor: pointer; }
+    .tool-select { padding: 6px 28px 6px 9px; cursor: pointer; }
+    .tool-button:hover, .tool-select:hover { border-color: var(--teal); }
+    .tool-button[aria-pressed="true"], .tool-button.is-active { color: white; background: var(--teal-dark); }
+    .tool-button.is-primary { color: white; background: var(--teal); }
+    .tool-button.is-warn { color: #6f4513; background: var(--gold-soft); }
+    .tool-button:disabled, .tool-select:disabled { cursor: not-allowed; opacity: .42; }
+    .editor-status {
+      min-height: 30px; padding: 5px 10px; border-radius: 999px;
+      color: var(--teal-dark); background: var(--teal-soft); font-size: .74rem; font-weight: 760;
+    }
+    .editor-status.is-warning { color: #6f4513; background: var(--gold-soft); }
+    .local-only-note { flex-basis: 100%; margin: 0; color: var(--muted); font-size: .72rem; }
+    .artifact-status-banner {
+      display: none; position: relative; z-index: 950; margin: 0; padding: 9px 18px;
+      border-bottom: 1px solid rgba(134, 69, 47, .42); color: #6b3325;
+      background: #f4dfd7; text-align: center; font-size: .78rem; font-weight: 850;
+    }
+    body.local-modified .artifact-status-banner { display: block; }
+    .editor-layer-note {
+      flex-basis: 100%; margin: 0; padding: 9px 11px; border: 1px solid rgba(183, 122, 37, .42);
+      border-radius: 10px; color: #674616; background: #fff8e8; font-size: .72rem;
+    }
+    html[data-editor-mode="readonly"] .editor-dock { display: none !important; }
+    body.editor-enabled [data-editorial="true"] {
+      border-radius: 5px; outline: 1px dashed rgba(42, 111, 107, .52); outline-offset: 3px;
+      cursor: text;
+    }
+    body.editor-enabled [data-editorial="true"]:focus {
+      outline: 3px solid rgba(183, 122, 37, .72); background: rgba(241, 227, 200, .28);
+    }
+    a[data-link-status="broken"], [data-editorial="true"][data-link-status="broken"] { text-decoration: underline wavy var(--brick); }
+    body.connection-mode [data-connectable="true"] { cursor: crosshair; }
+    body.connection-mode [data-connectable="true"]:hover,
+    [data-connectable="true"].is-connection-source {
+      outline: 3px solid var(--gold-line); outline-offset: 4px;
+    }
+    #connector-layer {
+      position: absolute; inset: 0 auto auto 0; z-index: 8;
+      width: 100%; height: 1px; overflow: visible; pointer-events: none;
+    }
+    #connector-paths > path {
+      fill: none; stroke: rgba(42, 111, 107, .72); stroke-width: 2.1;
+      stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+    }
+    #connector-paths > path.is-custom { stroke: var(--gold-line); stroke-width: 2.4; stroke-dasharray: 8 5; }
+    #connector-paths > path.is-hidden { display: none; }
+    body.connectors-active .episode-step::after { display: none; }
+    html.motion-ready[data-motion-effect="reveal"] [data-motion-item="true"] {
+      opacity: 0; transform: translateY(18px); transition: opacity .58s ease, transform .58s cubic-bezier(.2,.7,.2,1);
+    }
+    html.motion-ready[data-motion-effect="reveal"] [data-motion-item="true"].is-motion-visible {
+      opacity: 1; transform: translateY(0);
+    }
+    html.motion-ready[data-motion-effect="focus"] [data-motion-item="true"] {
+      opacity: 0; filter: blur(7px); transform: scale(.985);
+      transition: opacity .52s ease, filter .52s ease, transform .52s ease;
+    }
+    html.motion-ready[data-motion-effect="focus"] [data-motion-item="true"].is-motion-visible {
+      opacity: 1; filter: none; transform: scale(1);
+    }
+    .dynamic-token { display: inline-block; will-change: transform, opacity; }
+    [data-editorial="true"].text-just-updated { animation: text-update-pulse .52s ease; }
+    @keyframes text-update-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(183, 122, 37, .38); }
+      100% { box-shadow: 0 0 0 12px rgba(183, 122, 37, 0); }
+    }
+    .eyebrow {
+      margin: 0 0 10px; color: var(--teal-dark); font-size: .78rem;
+      font-weight: 800; letter-spacing: .18em; text-transform: uppercase;
+    }
+    .site-header { padding: 24px 0 0; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      min-height: 64px; padding: 10px 0 18px; border-bottom: 1px solid rgba(77, 91, 97, .2);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
+    .brand-mark {
+      display: grid; place-items: center; width: 42px; height: 42px;
+      border: 2px solid var(--teal); border-radius: 13px; color: var(--teal-dark);
+      background: var(--teal-soft); font-weight: 900;
+    }
+    .brand-copy { display: grid; line-height: 1.22; }
+    .brand-copy strong { font-size: .95rem; letter-spacing: .05em; }
+    .brand-copy small { color: var(--muted); }
+    .nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 18px; }
+    .nav a { color: var(--muted); font-size: .9rem; font-weight: 700; text-decoration: none; }
+    .nav a:hover { color: var(--teal-dark); }
+
+    .hero { padding: 76px 0 62px; }
+    .hero-grid { display: grid; grid-template-columns: 1.35fr .65fr; gap: 52px; align-items: center; }
+    h1, h2, h3 { margin-top: 0; line-height: 1.22; }
+    h1 { max-width: 14ch; margin-bottom: 24px; font-size: clamp(2.65rem, 7vw, 5.45rem); letter-spacing: -.055em; }
+    h2 { margin-bottom: 16px; font-size: clamp(1.85rem, 4vw, 3.05rem); letter-spacing: -.03em; }
+    h3 { margin-bottom: 8px; font-size: 1.1rem; }
+    .lede { max-width: 50rem; margin: 0 0 28px; color: var(--muted); font-size: 1.12rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 9px; }
+    .chip, .status-chip {
+      display: inline-flex; align-items: center; min-height: 34px; padding: 6px 12px;
+      border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 253, 249, .7);
+      color: var(--slate); font-size: .78rem; font-weight: 800;
+    }
+    .chip.teal { border-color: rgba(42, 111, 107, .42); background: var(--teal-soft); color: var(--teal-dark); }
+    .chip.gold { border-color: rgba(183, 122, 37, .44); background: var(--gold-soft); color: var(--gold); }
+    .hero-card {
+      position: relative; overflow: hidden; padding: 30px;
+      border: 1px solid rgba(42, 111, 107, .26); border-radius: 30px;
+      background: rgba(255, 253, 249, .86); box-shadow: var(--shadow);
+    }
+    .hero-card::before {
+      content: ""; position: absolute; inset: 0 0 auto; height: 8px;
+      background: linear-gradient(90deg, var(--gold-line), var(--teal));
+    }
+    .hero-card dl { display: grid; grid-template-columns: 7rem 1fr; gap: 12px 14px; margin: 22px 0 0; }
+    .hero-card dt { color: var(--muted); font-size: .82rem; font-weight: 800; }
+    .hero-card dd { margin: 0; font-size: .9rem; font-weight: 700; overflow-wrap: anywhere; }
+    .callout {
+      margin-top: 24px; padding: 15px 17px; border-left: 4px solid var(--gold-line);
+      border-radius: 0 12px 12px 0; background: var(--gold-soft); color: #624318; font-size: .88rem;
+    }
+
+    main section { padding: 72px 0; }
+    .section-intro { max-width: 50rem; margin: 0 0 34px; color: var(--muted); }
+    .band { border-block: 1px solid rgba(77, 91, 97, .18); background: rgba(255, 253, 249, .48); }
+    .principle-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .principle {
+      min-height: 200px; padding: 24px; border: 1px solid var(--line);
+      border-radius: var(--radius); background: var(--paper);
+    }
+    .principle .index { display: block; margin-bottom: 34px; color: var(--teal); font-size: .75rem; font-weight: 900; letter-spacing: .16em; }
+    .principle p { margin-bottom: 0; color: var(--muted); font-size: .9rem; }
+    .principle:nth-child(2) { border-color: rgba(183, 122, 37, .45); background: linear-gradient(150deg, var(--paper), var(--gold-soft)); }
+    .principle:nth-child(3) { border-color: rgba(72, 106, 89, .42); background: linear-gradient(150deg, var(--paper), var(--sage-soft)); }
+    .principle:nth-child(4) { border-color: rgba(42, 111, 107, .44); background: linear-gradient(150deg, var(--paper), var(--teal-soft)); }
+
+    .layout-workspace {
+      overflow: hidden; border: 1px solid rgba(42, 111, 107, .32);
+      border-radius: 30px; background: var(--paper); box-shadow: var(--shadow);
+    }
+    .layout-workspace-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      padding: 18px 22px; border-bottom: 1px solid var(--line); background: var(--ink); color: white;
+    }
+    .layout-workspace-head strong { display: block; font-size: .96rem; }
+    .layout-workspace-head span { display: block; color: #c9d4d2; font-size: .76rem; }
+    .layout-workspace-grid { display: grid; grid-template-columns: 1fr; min-height: 720px; }
+    .layout-source-panel {
+      display: none; min-width: 0; border-right: 1px solid var(--line); background: #f1f3ef;
+    }
+    body.editor-enabled .layout-workspace-grid { grid-template-columns: minmax(260px, .38fr) minmax(0, 1fr); }
+    body.editor-enabled .layout-source-panel { display: block; }
+    .layout-source-label {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--muted);
+      font-size: .72rem; font-weight: 850;
+    }
+    .layout-source-editor {
+      min-height: 660px; max-height: 760px; padding: 22px; overflow: auto;
+      background: #fffefb; font-size: .92rem; line-height: 1.72;
+    }
+    .layout-source-editor h3 { margin: 0 0 18px; font-size: 1.45rem; }
+    .layout-source-editor p { margin: 0 0 1.1em; color: #435154; }
+    .layout-stage-shell { min-width: 0; padding: 16px; background: #e9eeec; }
+    .dynamic-layout-stage {
+      position: relative; min-height: 688px; overflow: hidden;
+      border: 1px solid rgba(77, 91, 97, .25); border-radius: 18px; background:
+        linear-gradient(rgba(42, 111, 107, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(42, 111, 107, .045) 1px, transparent 1px),
+        #fffdf9;
+      background-size: 24px 24px; box-shadow: inset 0 1px 0 white;
+    }
+    .layout-text-layer, .layout-object-layer { position: absolute; inset: 0; }
+    .layout-text-layer { z-index: 1; pointer-events: none; }
+    .layout-text-layer.is-quick-editing { z-index: 15; }
+    .layout-object-layer { z-index: 4; pointer-events: none; }
+    .layout-flow-token {
+      position: absolute; top: 0; left: 0; white-space: pre; color: var(--ink);
+      transform: translate3d(0, 0, 0); transform-origin: 0 0;
+      transition: transform .34s cubic-bezier(.2, 1.25, .3, 1), opacity .22s ease;
+      will-change: transform; pointer-events: none;
+    }
+    .layout-flow-token.is-space, .layout-flow-token.is-break { opacity: 0; pointer-events: none; }
+    body.layout-demo-active .layout-text-layer { pointer-events: auto; }
+    body.layout-demo-active .layout-flow-token:not(.is-space):not(.is-break) { cursor: text; pointer-events: auto; touch-action: manipulation; }
+    .layout-flow-token.is-quick-edit-hidden { opacity: 0; }
+    .quick-edit-shell {
+      position: absolute; z-index: 20; padding: 7px; border: 1px solid rgba(42, 111, 107, .48);
+      border-radius: 12px; background: rgba(255, 253, 249, .98);
+      box-shadow: 0 18px 46px rgba(35, 48, 50, .2), 0 0 0 4px rgba(42, 111, 107, .1);
+      pointer-events: auto;
+    }
+    .quick-text-editor {
+      width: 100%; min-height: 52px; max-height: 280px; overflow: auto; padding: 7px 8px;
+      border: 0; border-radius: 7px; outline: none; color: var(--ink); background: transparent;
+      line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text;
+    }
+    .quick-text-editor:focus { box-shadow: inset 0 0 0 2px rgba(183, 122, 37, .48); }
+    .quick-edit-hint { padding: 4px 8px 1px; color: var(--muted); font-size: .67rem; text-align: right; user-select: none; }
+    .layout-data-object {
+      position: absolute; top: 0; left: 0; z-index: 10; display: flex; flex-direction: column;
+      min-width: 220px; min-height: 210px; margin: 0; padding: 0; overflow: hidden;
+      border: 1px solid rgba(42, 111, 107, .44); border-radius: 15px;
+      background: #fffefb; box-shadow: 0 18px 42px rgba(35, 48, 50, .18);
+      transform: translate3d(0, 0, 0); pointer-events: auto;
+    }
+    .layout-data-object.is-moving, .layout-data-object.is-resizing {
+      border-color: var(--gold-line); box-shadow: 0 24px 58px rgba(35, 48, 50, .24), 0 0 0 3px rgba(183, 122, 37, .14);
+    }
+    .layout-object-bar {
+      display: flex; align-items: center; gap: 7px; min-height: 42px; padding: 7px 8px 7px 12px;
+      border-bottom: 1px solid var(--line); background: #f6f7f3; touch-action: pan-y; user-select: none;
+    }
+    body.editor-enabled:not(.connection-mode) .layout-object-bar,
+    body.layout-demo-active:not(.connection-mode) .layout-object-bar { cursor: grab; touch-action: none; }
+    body.connection-mode .layout-resize-handle { touch-action: pan-y; }
+    body.editor-enabled .layout-data-object.is-moving .layout-object-bar,
+    body.layout-demo-active .layout-data-object.is-moving .layout-object-bar { cursor: grabbing; }
+    .layout-object-title {
+      min-width: 70px; flex: 1; overflow: hidden; color: var(--ink); font-size: .72rem;
+      font-weight: 850; text-overflow: ellipsis; white-space: nowrap;
+    }
+    body.editor-enabled .layout-object-title::before,
+    body.layout-demo-active .layout-object-title::before {
+      content: "⠿ 拖动"; margin-right: 6px; color: var(--teal); font-size: .78rem; vertical-align: -.02em;
+    }
+    .layout-chart-type, .layout-view-button, .layout-object-remove {
+      min-height: 28px; border: 1px solid var(--line); border-radius: 7px;
+      color: var(--muted); background: white; font: inherit; font-size: .66rem; font-weight: 780;
+    }
+    .layout-chart-type { width: 76px; min-width: 76px; flex: 0 0 76px; padding: 3px 5px; }
+    .layout-view-toggle { display: inline-flex; flex: 0 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; }
+    .layout-view-button { min-width: 34px; padding: 3px 6px; border: 0; border-radius: 0; cursor: pointer; }
+    .layout-view-button + .layout-view-button { border-left: 1px solid var(--line); }
+    .layout-view-button.is-active { color: white; background: var(--teal-dark); }
+    .layout-object-remove { width: 29px; min-width: 29px; flex: 0 0 29px; padding: 0; color: var(--brick); cursor: pointer; }
+    .layout-object-content { position: relative; min-height: 0; flex: 1; overflow: hidden; background: #fffdf9; }
+    .layout-chart-canvas { display: block; width: 100%; height: 100%; }
+    .layout-table-wrap { width: 100%; height: 100%; overflow: auto; background: white; }
+    .layout-data-table { width: 100%; min-width: 340px; border-collapse: collapse; color: var(--ink); font-size: .72rem; font-variant-numeric: tabular-nums; }
+    .layout-data-table th, .layout-data-table td {
+      min-width: 76px; padding: 7px 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      text-align: right; white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    .layout-data-table th, .layout-data-table td:first-child { background: var(--slate-soft); font-weight: 820; text-align: left; }
+    .layout-data-table th:focus, .layout-data-table td:focus { outline: 2px solid var(--gold-line); outline-offset: -2px; }
+    .layout-data-table [contenteditable="true"] { background: #fff8e8; box-shadow: inset 0 0 0 2px rgba(183, 122, 37, .42); }
+    .layout-resize-handle {
+      position: absolute; right: 0; bottom: 0; z-index: 4; width: 44px; height: 44px;
+      border: 0; background: transparent; cursor: nwse-resize; touch-action: none;
+    }
+    .layout-resize-handle::after {
+      content: ""; position: absolute; right: 4px; bottom: 4px; width: 9px; height: 9px;
+      border-right: 2px solid var(--teal); border-bottom: 2px solid var(--teal);
+    }
+    body:not(.editor-enabled) .layout-chart-type,
+    body:not(.editor-enabled) .layout-object-remove { visibility: hidden; pointer-events: none; }
+    body:not(.editor-enabled):not(.layout-demo-active) .layout-resize-handle { visibility: hidden; pointer-events: none; }
+    .layout-resize-handle:disabled { cursor: default; }
+    .layout-help {
+      margin: 12px 2px 0; color: var(--muted); font-size: .75rem;
+    }
+    html[data-editor-mode="readonly"] #layout-add-table,
+    html[data-editor-mode="readonly"] #layout-add-table-inline,
+    html[data-editor-mode="readonly"] .layout-chart-type,
+    html[data-editor-mode="readonly"] .layout-view-toggle,
+    html[data-editor-mode="readonly"] .layout-object-remove,
+    html[data-editor-mode="readonly"] .layout-resize-handle { display: none !important; }
+    html[data-editor-mode="readonly"] .layout-flow-token { pointer-events: none !important; cursor: default !important; }
+    html[data-editor-mode="readonly"] .quick-edit-shell { display: none !important; }
+    .editorial-demo-head {
+      display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 18px;
+    }
+    .editorial-demo-head > div { min-width: 0; }
+    .editorial-demo-head h2 { margin-bottom: 10px; }
+    .editorial-demo-content { display: block; }
+    .editorial-demo-section.is-collapsed .editorial-demo-content { display: none; }
+    .editorial-demo-section.is-collapsed { padding-bottom: 28px; }
+    .editorial-scope {
+      margin: 0 0 18px; padding: 13px 15px; border-left: 4px solid var(--gold-line);
+      border-radius: 0 12px 12px 0; color: #674616; background: #fff8e8; font-size: .84rem;
+    }
+
+    .demo-wrap {
+      overflow: hidden; border: 1px solid rgba(42, 111, 107, .32);
+      border-radius: 30px; background: var(--paper); box-shadow: var(--shadow);
+    }
+    .demo-head {
+      display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end;
+      padding: 30px 32px; color: #f8fbfa; background: var(--ink);
+    }
+    .demo-head h3 { margin-bottom: 7px; color: white; font-size: 1.5rem; }
+    .demo-head p { margin: 0; color: #c9d4d2; font-size: .92rem; }
+    .demo-controls { display: flex; flex-wrap: wrap; align-items: end; justify-content: flex-end; gap: 10px; }
+    .field { display: grid; gap: 5px; }
+    .field label { color: #dce9e6; font-size: .74rem; font-weight: 800; }
+    select, .button {
+      min-height: 46px; border: 1px solid transparent; border-radius: 12px;
+      padding: 10px 14px; cursor: pointer;
+    }
+    select { min-width: 188px; color: var(--ink); background: white; }
+    .button { font-weight: 850; }
+    .button.primary { color: white; background: var(--teal); }
+    .button.primary:hover { background: #33827d; }
+    .button.secondary { color: white; border-color: #6f7c7f; background: transparent; }
+    .button.secondary:hover { background: rgba(255, 255, 255, .09); }
+    .button.light { color: var(--teal-dark); border-color: var(--teal); background: var(--teal-soft); }
+    .button:disabled { cursor: not-allowed; opacity: .45; }
+    .demo-body { padding: 28px 32px 34px; }
+    .snapshot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .snapshot { padding: 17px; border: 1px solid var(--line); border-radius: 15px; background: var(--slate-soft); }
+    .snapshot small { display: block; margin-bottom: 7px; color: var(--muted); font-weight: 800; }
+    .snapshot strong { display: block; font-size: .9rem; overflow-wrap: anywhere; }
+    .snapshot span { color: var(--muted); font-size: .76rem; }
+    .result-bar {
+      display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: center;
+      margin: 0 0 22px; padding: 17px; border: 1px solid var(--line);
+      border-radius: 16px; background: var(--slate-soft);
+    }
+    .result-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: white; font-weight: 950; }
+    .result-copy strong { display: block; }
+    .result-copy span { color: var(--muted); font-size: .86rem; }
+    .result-code { font-family: ui-monospace, "Cascadia Mono", monospace; font-size: .78rem; font-weight: 850; }
+    .result-bar.pass { border-color: rgba(72, 106, 89, .42); background: var(--sage-soft); }
+    .result-bar.warning { border-color: rgba(183, 122, 37, .5); background: var(--gold-soft); }
+    .result-bar.blocked { border-color: rgba(134, 69, 47, .5); background: var(--brick-soft); }
+    .result-bar.stale { border-color: rgba(77, 91, 97, .5); background: var(--slate-soft); }
+    .two-col { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, .5fr); gap: 22px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    caption { padding: 13px 15px; color: var(--muted); text-align: left; font-size: .78rem; font-weight: 800; }
+    th, td { padding: 12px 14px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); background: var(--slate-soft); font-size: .74rem; letter-spacing: .03em; }
+    td:last-child { min-width: 96px; }
+    .row-state { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: .72rem; font-weight: 850; }
+    .row-state.ok { color: var(--sage); background: var(--sage-soft); }
+    .row-state.warn { color: var(--gold); background: var(--gold-soft); }
+    .row-state.fail { color: var(--brick); background: var(--brick-soft); }
+    .side-stack { display: grid; align-content: start; gap: 12px; }
+    .mini-card { padding: 17px; border: 1px solid var(--line); border-radius: 15px; background: white; }
+    .mini-card h4 { margin: 0 0 8px; font-size: .88rem; }
+    .mini-card p, .mini-card ul { margin: 0; color: var(--muted); font-size: .82rem; }
+    .mini-card ul { padding-left: 1.15rem; }
+    .claim-box { border-color: rgba(134, 69, 47, .35); background: var(--brick-soft); }
+    .decision-box { border-color: rgba(183, 122, 37, .38); background: var(--gold-soft); }
+    .decision-actions { display: grid; gap: 8px; margin-top: 12px; }
+    .decision-note { min-height: 2.8em; color: #674616; font-size: .78rem; }
+    .reality-panel {
+      margin-top: 22px; padding: 20px; border: 1px solid rgba(42, 111, 107, .38);
+      border-radius: 18px; background: #f5faf8;
+    }
+    .reality-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .reality-panel-head h3 { margin-bottom: 5px; }
+    .reality-panel-head p { margin: 0; color: var(--muted); font-size: .82rem; }
+    .reality-record-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .reality-record {
+      min-width: 0; padding: 12px 13px; border: 1px solid var(--line); border-radius: 12px; background: white;
+    }
+    .reality-record small { display: block; margin-bottom: 4px; color: var(--muted); font-size: .68rem; font-weight: 850; letter-spacing: .04em; }
+    .reality-record strong { display: block; overflow-wrap: anywhere; font-size: .79rem; line-height: 1.5; }
+    .reality-record.wide { grid-column: span 2; }
+    .reality-disclaimer { margin: 14px 0 0; color: var(--brick); font-size: .78rem; font-weight: 780; }
+
+    .episode {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
+      margin-top: 30px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper);
+    }
+    .episode-step { position: relative; min-height: 178px; padding: 22px 18px; border-right: 1px solid var(--line); }
+    .episode-step:last-child { border-right: 0; }
+    .episode-step::after {
+      content: ""; position: absolute; z-index: 2; top: 43px; right: -7px;
+      width: 12px; height: 12px; border-top: 2px solid var(--line); border-right: 2px solid var(--line); transform: rotate(45deg); background: var(--paper);
+    }
+    .episode-step:last-child::after { display: none; }
+    .episode-step b { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 20px; border-radius: 50%; color: white; background: var(--teal); font-size: .78rem; }
+    .episode-step h3 { font-size: .92rem; }
+    .episode-step p { margin: 0; color: var(--muted); font-size: .78rem; }
+    .episode-step.active { background: var(--teal-soft); }
+    .episode-step.active::after { background: var(--teal-soft); }
+    .episode-step.completed b { background: var(--sage); }
+    .episode-step.completed { box-shadow: inset 0 -4px 0 rgba(72, 106, 89, .34); }
+
+    .boundary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .boundary-card { padding: 28px; border-radius: var(--radius); }
+    .boundary-card.allowed { border: 1px solid rgba(72, 106, 89, .38); background: var(--sage-soft); }
+    .boundary-card.denied { border: 1px solid rgba(134, 69, 47, .38); background: var(--brick-soft); }
+    .boundary-card ul { margin: 18px 0 0; padding-left: 1.15rem; }
+    .boundary-card li + li { margin-top: 7px; }
+    .publication-note {
+      display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+      margin-top: 24px; padding: 24px; border: 1px solid rgba(42, 111, 107, .38);
+      border-radius: var(--radius); background: var(--teal-soft);
+    }
+    .publication-note p { margin: 0; color: var(--teal-dark); }
+    .doc-link {
+      display: inline-flex; align-items: center; min-height: 46px; padding: 10px 16px;
+      border-radius: 12px; color: white; background: var(--teal-dark); font-weight: 850; text-decoration: none; white-space: nowrap;
+    }
+    .doc-link:hover { color: white; background: var(--teal); }
+    details { border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
+    summary { padding: 17px 19px; cursor: pointer; font-weight: 850; }
+    pre {
+      overflow: auto; margin: 0; padding: 20px; border-top: 1px solid var(--line);
+      color: #dce9e6; background: var(--ink); font: .78rem/1.6 ui-monospace, "Cascadia Mono", monospace;
+    }
+    .site-footer { padding: 34px 0 46px; border-top: 1px solid rgba(77, 91, 97, .2); color: var(--muted); font-size: .82rem; }
+    .footer-grid { display: flex; justify-content: space-between; gap: 20px; }
+    .footer-grid p { margin: 0; }
+
+    @media (max-width: 960px) {
+      .editor-dock-bar { flex-wrap: wrap; }
+      .editor-dock-title { min-width: 0; flex: 1 1 220px; }
+      .editor-status { order: 4; flex: 1 0 100%; }
+      .hero-grid, .two-col, .boundary-grid { grid-template-columns: 1fr; }
+      .reality-record-grid { grid-template-columns: repeat(2, 1fr); }
+      .principle-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-card { max-width: 680px; }
+      .demo-head { grid-template-columns: 1fr; align-items: start; }
+      .demo-controls { justify-content: flex-start; }
+      .episode { grid-template-columns: repeat(3, 1fr); }
+      .episode-step:nth-child(3) { border-right: 0; }
+      .episode-step:nth-child(4) { border-top: 1px solid var(--line); }
+      .episode-step:nth-child(5), .episode-step:nth-child(6) { border-top: 1px solid var(--line); }
+      body.editor-enabled .layout-workspace-grid { grid-template-columns: 1fr; }
+      .layout-source-panel { border-right: 0; border-bottom: 1px solid var(--line); }
+      .layout-source-editor { min-height: 260px; max-height: 360px; }
+    }
+    @media (max-width: 680px) {
+      .editor-dock-inner { width: calc(100% - 14px); }
+      .editor-dock-bar { gap: 6px; }
+      .editor-dock:not(.is-collapsed) {
+        max-height: min(62vh, 520px); overflow-y: auto; overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
+      .editor-dock:not(.is-collapsed) .editor-dock-bar {
+        position: sticky; top: 0; z-index: 2; background: rgba(255, 253, 249, .98);
+      }
+      .editor-dock-title small { display: none; }
+      .tool-group { width: 100%; }
+      .tool-button { flex: 1 1 auto; }
+      .tool-select { flex: 1 1 120px; min-width: 0; }
+      .shell { width: min(100% - 24px, var(--max)); }
+      .topbar, .footer-grid { align-items: flex-start; flex-direction: column; }
+      .nav { justify-content: flex-start; }
+      .hero { padding: 52px 0 42px; }
+      main section { padding: 54px 0; }
+      .principle-grid, .snapshot-grid, .episode { grid-template-columns: 1fr; }
+      .demo-head, .demo-body { padding-inline: 18px; }
+      .demo-controls { display: grid; width: 100%; }
+      select, .button { width: 100%; }
+      .result-bar { grid-template-columns: auto 1fr; }
+      .result-code { grid-column: 2; }
+      .episode-step { min-height: 130px; border-right: 0; border-top: 1px solid var(--line); }
+      .episode-step:first-child { border-top: 0; }
+      .episode-step::after { display: none; }
+      .publication-note { grid-template-columns: 1fr; }
+      .doc-link { justify-content: center; }
+      .layout-workspace-head { align-items: stretch; flex-direction: column; }
+      .layout-stage-shell { padding: 8px; }
+      .layout-object-title { min-width: 0; max-width: 52px; }
+      .layout-chart-type { width: 60px; min-width: 60px; flex-basis: 60px; }
+      .layout-data-object { min-width: min(220px, calc(100% - 16px)); }
+      .editorial-demo-head, .reality-panel-head { align-items: stretch; flex-direction: column; }
+      .reality-record-grid { grid-template-columns: 1fr; }
+      .reality-record.wide { grid-column: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+      [data-motion-item="true"] { opacity: 1 !important; filter: none !important; transform: none !important; }
+    }
+    @media print {
+      @page { size: A4; margin: 14mm; }
+      body { background: white; color: black; font-size: 10pt; }
+      .shell { width: 100%; }
+      .nav, .demo-controls, .decision-actions, .skip-link, .editor-dock, #connector-layer, .layout-workspace-head, .layout-source-panel { display: none !important; }
+      .hero { padding: 18mm 0 10mm; }
+      main section { padding: 10mm 0; break-inside: avoid; }
+      .hero-card, .demo-wrap { box-shadow: none; }
+      .layout-workspace { box-shadow: none; }
+      .layout-workspace-grid { display: block; min-height: 0; }
+      .layout-stage-shell { padding: 0; background: white; }
+      .dynamic-layout-stage { border-color: #999; background: white; }
+      .demo-head { color: black; background: white; border-bottom: 1px solid #999; }
+      .demo-head h3, .demo-head p { color: black; }
+      .principle, .snapshot, .mini-card, .boundary-card, .episode, details { break-inside: avoid; }
+      pre { white-space: pre-wrap; color: black; background: white; }
+      a { color: black; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <p class="artifact-status-banner" id="artifact-status-banner" role="status" aria-live="polite">本地已修改／非官方副本 · non-authoritative-replica；不得替代发布源或声称单一写权。</p>
+
+  <aside id="editor-toolbar" class="editor-dock is-collapsed" aria-label="本地作者与排版演示工具">
+    <div class="editor-dock-inner">
+      <div class="editor-dock-bar">
+        <div class="editor-dock-title"><strong>本地作者／排版演示层</strong><small>非 Portable View 协议能力 · 非 Managed Run</small></div>
+        <button class="tool-button is-primary" id="editor-toggle" type="button" aria-pressed="false">开启编辑</button>
+        <span class="editor-status" id="editor-status" role="status" aria-live="polite">阅读模式 · 官方 V0.3 源文件未修改</span>
+        <button class="tool-button" id="editor-collapse" type="button" aria-expanded="false" aria-controls="editor-controls">展开工具</button>
+      </div>
+      <div class="editor-controls" id="editor-controls">
+        <div class="tool-group" role="group" aria-label="编辑历史">
+          <span class="tool-group-label">历史</span>
+          <button class="tool-button" id="history-undo" type="button" aria-label="撤销" disabled>↶ 撤销</button>
+          <button class="tool-button" id="history-redo" type="button" aria-label="重做" disabled>↷ 重做</button>
+        </div>
+        <div class="tool-group" role="group" aria-label="文字格式">
+          <span class="tool-group-label">文字</span>
+          <button class="tool-button" id="format-bold" type="button" aria-label="加粗"><strong>B</strong></button>
+          <button class="tool-button" id="format-italic" type="button" aria-label="斜体"><em>I</em></button>
+          <button class="tool-button" id="format-underline" type="button" aria-label="下划线"><u>U</u></button>
+          <button class="tool-button" id="align-left" type="button" aria-label="左对齐">左</button>
+          <button class="tool-button" id="align-center" type="button" aria-label="居中对齐">中</button>
+          <button class="tool-button" id="align-right" type="button" aria-label="右对齐">右</button>
+          <label class="tool-group-label" for="editor-font-size">字号</label>
+          <select class="tool-select" id="editor-font-size" aria-label="字号">
+            <option value="3">正常</option><option value="2">小</option><option value="4">大</option><option value="5">更大</option><option value="6">标题</option>
+          </select>
+          <label class="tool-group-label" for="editor-font-family">字体</label>
+          <select class="tool-select" id="editor-font-family" aria-label="字体">
+            <option value="">默认</option><option value="Microsoft YaHei">微软雅黑</option><option value="SimSun">宋体</option><option value="SimHei">黑体</option><option value="KaiTi">楷体</option><option value="Arial">Arial</option>
+          </select>
+        </div>
+        <div class="tool-group" role="group" aria-label="链接工具">
+          <span class="tool-group-label">链接</span>
+          <button class="tool-button" id="insert-link" type="button">插入链接</button>
+          <button class="tool-button" id="remove-link" type="button">移除链接</button>
+          <button class="tool-button" id="check-links" type="button">检查链接</button>
+        </div>
+        <div class="tool-group" role="group" aria-label="动态效果与连线">
+          <label class="tool-group-label" for="motion-effect">文字动效</label>
+          <select class="tool-select" id="motion-effect">
+            <option value="flow" selected>文字回弹排版</option><option value="reveal">平滑显现</option><option value="focus">聚焦显现</option><option value="none">关闭动效</option>
+          </select>
+          <button class="tool-button" id="add-connector" type="button" aria-pressed="false">连接模块</button>
+          <button class="tool-button" id="remove-last-connector" type="button">撤销新增连线</button>
+          <button class="tool-button" id="toggle-connectors" type="button" aria-pressed="true">隐藏连线</button>
+          <span class="sr-only" id="connection-summary" aria-live="polite"></span>
+        </div>
+        <div class="tool-group" role="group" aria-label="动态表格与排版画布">
+          <span class="tool-group-label">数据对象</span>
+          <button class="tool-button" id="layout-scroll-to" type="button">定位动态画布</button>
+          <button class="tool-button is-primary" id="layout-add-table" type="button" disabled>插入表格</button>
+        </div>
+        <div class="tool-group" role="group" aria-label="保存与导出">
+          <span class="tool-group-label">文件</span>
+          <button class="tool-button is-warn" id="save-current" type="button">另存本地副本</button>
+          <button class="tool-button" id="export-editable" type="button">导出可编辑副本</button>
+          <button class="tool-button" id="export-readonly" type="button">导出只读快照</button>
+        </div>
+        <p class="editor-layer-note"><strong>责任边界：</strong>这一层只用于本地作者编辑与排版演示，不属于 Portable View 协议能力，不是 Managed Run，也不会取得或转移 HyperUnit 的单一写权。</p>
+        <p class="local-only-note">所有修改只发生在当前浏览器内存中；不会联网或自动保存。另存和导出只在你主动点击后执行，生成文件均标记为非权威副本。</p>
+      </div>
+    </div>
+  </aside>
+
+  <svg id="connector-layer" aria-hidden="true" focusable="false">
+    <defs>
+      <marker id="connector-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L8,4 L0,8 Z" fill="#2a6f6b" stroke="none"></path>
+      </marker>
+      <marker id="connector-arrow-custom" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L8,4 L0,8 Z" fill="#b77a25" stroke="none"></path>
+      </marker>
+    </defs>
+    <g id="connector-paths"></g>
+  </svg>
+
+  <header class="site-header shell">
+    <div class="topbar">
+      <a class="brand" href="#top" aria-label="返回页面顶部">
+        <span class="brand-mark" aria-hidden="true">HU</span>
+        <span class="brand-copy"><strong>HYPERUNIT NETWORK</strong><small>白皮书配套案例 · V0.3</small></span>
+      </a>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#responsibility">责任边界</a>
+        <a href="#demo">合成校验</a>
+        <a href="#episode">Decision Episode</a>
+        <a href="#dynamic-layout">本地排版工具</a>
+        <a href="#boundary">治理边界</a>
+        <a href="#whitepaper">白皮书</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero shell" id="top">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Portable View / Standard Profile</p>
+          <h1>银行账户周余额发布前校验</h1>
+          <p class="lede">一个与《超元网络白皮书》同步发布的最小 HyperUnit 案例：它持续负责在周余额表发布前核验账户完整性与台账一致性，输出可追溯的 Claim，由人形成最终发布 Decision。</p>
+          <div class="chips" aria-label="发布属性">
+            <span class="chip teal">概念示例</span>
+            <span class="chip gold">合成数据</span>
+            <span class="chip">不连接银行或飞书</span>
+            <span class="chip" id="editing-chip">官方源默认只读浏览 · 可显式开启本地作者层</span>
+          </div>
+        </div>
+        <aside class="hero-card" aria-label="HyperUnit 身份摘要">
+          <p class="eyebrow">HyperUnit identity</p>
+          <h2 style="font-size:1.6rem;margin-bottom:0">稳定身份，单一写权</h2>
+          <dl>
+            <dt>unit_id</dt><dd>hu.example.treasury.weekly-bank-balance-prepublish-check</dd>
+            <dt>Responsibility</dt><dd>在每周银行余额表发布前，识别账户遗漏、重复、币种与状态冲突，并形成可解释校验 Claim。</dd>
+            <dt>Capability</dt><dd>prepublish-check@0.1.0</dd>
+            <dt>Profile</dt><dd>Standard / Assisted</dd>
+          </dl>
+          <div class="callout"><strong>重要：</strong>页面中的“通过”仅表示合成校验规则通过，不等于真实业务发布获批，也不构成对外执行授权。</div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="band" id="responsibility">
+      <div class="shell">
+        <p class="eyebrow">Why this is a HyperUnit</p>
+        <h2>它保存的不是一张表，而是一项持续责任</h2>
+        <p class="section-intro">把文件换成网页并不会自动形成能力。只有身份、责任、带类型输入、输出与现实验证保持清晰，账户校验才可能被复用、质疑和演化。</p>
+        <div class="principle-grid">
+          <article class="principle"><span class="index">01 / IDENTITY</span><h3>逻辑身份不随文件名变化</h3><p>副本可携带，但发布链中同时只有一个 Authoritative Writable Instance。</p></article>
+          <article class="principle"><span class="index">02 / RESPONSIBILITY</span><h3>对“发布前完整性”负责</h3><p>不对银行余额真实性作无限承诺，也不替代资金岗位的最终判断。</p></article>
+          <article class="principle"><span class="index">03 / TYPED I/O</span><h3>输入保留认知类型</h3><p>台账与已观测余额是 Fact；规则阈值是 Configuration；校验结论是 Claim。</p></article>
+          <article class="principle"><span class="index">04 / REALITY</span><h3>后续结果形成 Evidence</h3><p>平台接收、差错反馈与补录结果作为 Reality Fact，不能反向改写历史 Claim。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell editorial-demo-section is-collapsed" id="dynamic-layout">
+      <div class="editorial-demo-head">
+        <div>
+          <p class="eyebrow">Local authoring demonstration</p>
+          <h2>可选的本地作者与动态排版演示</h2>
+          <p class="section-intro">展开后无需开启全局编辑：可直接移动或调整数据对象大小、观察文字避让，并双击画布文字快速修改当前段落。这组能力只属于本地作者／排版演示层，不是 Portable View 协议能力，也不是 Managed Run。</p>
+        </div>
+        <button class="button light" id="editorial-demo-toggle" type="button" aria-expanded="false" aria-controls="editorial-demo-content">展开本地排版演示</button>
+      </div>
+      <noscript id="noscript-editorial-note"><div class="callout"><strong>无脚本阅读：</strong>本地作者层可以插入表格、切换本地图表，并让正文依据可移动对象自动避让；这些能力不联网、不持久化，也不执行真实业务。当前浏览器禁用脚本，因此编辑交互不可用，但核心账户案例与治理说明仍可阅读。</div></noscript>
+      <div class="editorial-demo-content" id="editorial-demo-content">
+        <p class="editorial-scope"><strong>边界声明：</strong>开启后发生的修改只保留在浏览器内存；另存或导出的文件会自动标记为“本地已修改／非官方副本（non-authoritative-replica）”，不得声称拥有单一写权。</p>
+        <div class="layout-workspace">
+        <div class="layout-workspace-head">
+          <div><strong>账户校验说明 · 动态画布</strong><span id="layout-status" role="status" aria-live="polite">演示已展开：拖动对象顶部把手可移动，拖动右下角可调整大小；双击画布文字可快速编辑当前段落。</span></div>
+          <button class="button light" id="layout-add-table-inline" type="button" disabled>＋ 插入表格</button>
+        </div>
+        <div class="layout-workspace-grid">
+          <aside class="layout-source-panel" aria-label="动态画布文字源">
+            <div class="layout-source-label"><span>画布文字源</span><span>开启编辑后可修改</span></div>
+            <article id="layout-source" class="layout-source-editor" contenteditable="false" spellcheck="true">
+              <h3>周余额发布前校验如何工作</h3>
+              <p>本案例把账户主数据、周余额快照与版本化校验规则组合成一次可追溯的 Dependency Snapshot。Capability 只形成校验 Claim，不会直接替代责任岗位作出最终发布 Decision。</p>
+              <p>拖动右侧的数据对象时，文字会依据对象外接矩形和绕排距离重新寻找可读行宽。对象进入正文区域，段落主动让出空间；对象离开后，文字自然合拢，而不是被永久切成固定版式。</p>
+              <p>表格与图表使用同一份合成数据。双击表格单元格可修改值，切回图表后会根据最新数据在本地重新绘制。这里不会连接银行、飞书或外部图表服务。</p>
+              <p>拖动和缩放只改变当前页面内存中的编排状态。若要保留文字、数据、位置、尺寸与视图选择，需要使用顶部的“另存本地副本”或“导出可编辑副本”。</p>
+            </article>
+          </aside>
+          <div class="layout-stage-shell">
+            <div id="layout-stage" class="dynamic-layout-stage" aria-label="文字自动避让的动态排版画布；演示展开时可移动或调整对象大小，并双击文字快速编辑" aria-describedby="layout-help">
+              <div id="layout-text-layer" class="layout-text-layer" aria-hidden="true"></div>
+              <article id="layout-semantic-document" class="sr-only"></article>
+              <div id="layout-object-layer" class="layout-object-layer"></div>
+            </div>
+            <p class="layout-help" id="layout-help">演示操作：无需开启全局编辑，抓住对象顶部“⠿ 拖动”把手即可移动，拖动右下角把手即可调整宽高；两种操作均支持鼠标、触控与方向键。双击任意画布文字可快速编辑当前段落，Ctrl／Cmd＋Enter 提交、Esc 取消、失焦提交。开启全局编辑后还可插入表格、修改单元格与建立连线；连接模式不会触发移动或缩放。</p>
+          </div>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell" id="demo">
+      <p class="eyebrow">Synthetic demonstration</p>
+      <h2>用四种合成场景查看校验边界</h2>
+      <p class="section-intro">以下交互完全在当前页面内运行，不上传、不自动保存、不请求网络。每次运行都会明确 Dependency Snapshot、规则结果和 Claim；它不会执行真实发布。</p>
+
+      <div class="demo-wrap">
+        <div class="demo-head">
+          <div><h3>2026-W34 · 周余额发布前检查</h3><p>Responsibility owner：资金运营岗 B（示例） · 所有账号均为脱敏虚构数据</p></div>
+          <div class="demo-controls">
+            <div class="field">
+              <label for="scenario">合成场景</label>
+              <select id="scenario">
+                <option value="pass">全部通过</option>
+                <option value="warning">需要人工确认</option>
+                <option value="blocked">发现阻断异常</option>
+                <option value="stale">上游依赖已过期</option>
+              </select>
+            </div>
+            <button class="button primary" type="button" id="run-check">运行合成校验</button>
+            <button class="button secondary" type="button" id="reset-demo">重置</button>
+          </div>
+        </div>
+
+        <div class="demo-body">
+          <div class="snapshot-grid" aria-label="Dependency Snapshot">
+            <div class="snapshot"><small>Fact · 账户主数据</small><strong id="master-version">acct-master@2026-08-18T16:00+08:00</strong><span>observed_at 16:02 · committed_at 16:04</span></div>
+            <div class="snapshot"><small>Fact · 周余额工作表</small><strong id="balance-version">weekly-balance@2026-W34-r03</strong><span>event_time 2026-08-20 · observed_at 09:12</span></div>
+            <div class="snapshot"><small>Configuration</small><strong id="config-version">prepublish-policy@1.4.0</strong><span>唯一性 · 状态 · 币种 · 完整性</span></div>
+          </div>
+
+          <div class="result-bar pass" id="result-bar" role="status" aria-live="polite">
+            <span class="result-icon" id="result-icon" aria-hidden="true">✓</span>
+            <span class="result-copy"><strong id="result-title">等待运行合成校验</strong><span id="result-detail">默认展示 2026-W34 的 3 个合成账户全部通过；点击运行后形成新的示例 Claim。</span></span>
+            <span class="result-code" id="result-code">NOT_RUN</span>
+          </div>
+
+          <div class="two-col">
+            <div class="table-wrap">
+              <table>
+                <caption>合成账户输入及逐行校验结果</caption>
+                <thead><tr><th>账户</th><th>币种</th><th>台账状态</th><th>余额</th><th>来源</th><th>结果</th></tr></thead>
+                <tbody id="account-rows">
+                  <tr><td>华东运营户 · ****2208</td><td>CNY</td><td>Active</td><td>¥12,480,000</td><td>银行回单</td><td><span class="row-state ok">通过</span></td></tr>
+                  <tr><td>总部美元户 · ****0716</td><td>USD</td><td>Active</td><td>$820,000</td><td>银行回单</td><td><span class="row-state ok">通过</span></td></tr>
+                  <tr><td>华南税务户 · ****9031</td><td>CNY</td><td>Active</td><td>¥3,260,000</td><td>网银导出</td><td><span class="row-state ok">通过</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <aside class="side-stack" aria-label="校验输出与决策">
+              <div class="mini-card"><h4>Capability Contract</h4><ul><li>检查账户唯一性</li><li>检查台账覆盖与状态</li><li>检查币种一致性</li><li>检查来源与观察时间</li></ul></div>
+              <div class="mini-card claim-box"><h4>Typed Output · Claim</h4><p id="claim-text">尚未运行。输出不会被当作 Fact，也不会自动成为发布 Decision。</p></div>
+              <div class="mini-card decision-box"><h4>Human Governance · Decision</h4><p>资金运营岗 B 可以接受、质疑或暂停；Decision Baseline 与 Intervention 均保留。</p><div class="decision-actions"><button class="button light" type="button" id="record-decision" disabled>模拟记录人工 Decision</button><span class="decision-note" id="decision-note">请先运行合成校验。</span></div></div>
+            </aside>
+          </div>
+          <section class="reality-panel" id="reality-panel" aria-labelledby="reality-panel-title">
+            <div class="reality-panel-head">
+              <div>
+                <h3 id="reality-panel-title">Reality 验证闭环 · 合成 UI 记录</h3>
+                <p>先运行校验并记录人工 Decision，再模拟 Execution / Outcome / Reality Fact / Evidence。</p>
+              </div>
+              <button class="button primary" type="button" id="simulate-reality" disabled>模拟后续结果与 Reality 验证</button>
+            </div>
+            <div class="reality-record-grid" aria-live="polite">
+              <div class="reality-record"><small>baseline_id</small><strong id="reality-baseline-id">尚未形成</strong></div>
+              <div class="reality-record"><small>actor</small><strong id="reality-actor">尚未形成</strong></div>
+              <div class="reality-record"><small>decided_at</small><strong id="reality-decided-at">尚未形成</strong></div>
+              <div class="reality-record wide"><small>declared_rationale</small><strong id="reality-rationale">尚未形成</strong></div>
+              <div class="reality-record"><small>decision</small><strong id="reality-decision">尚未形成</strong></div>
+              <div class="reality-record wide"><small>dependency_refs</small><strong id="reality-dependencies">尚未形成</strong></div>
+              <div class="reality-record"><small>execution / outcome</small><strong id="reality-outcome">等待人工 Decision</strong></div>
+              <div class="reality-record wide"><small>Reality Fact</small><strong id="reality-fact">等待模拟后续结果</strong></div>
+              <div class="reality-record"><small>evidence_status</small><strong id="reality-evidence-status">NOT_OBSERVED</strong></div>
+              <div class="reality-record wide"><small>Evidence</small><strong id="reality-evidence">尚未生成</strong></div>
+            </div>
+            <p class="reality-disclaimer">本按钮只在当前页面内生成合成 UI 记录；不会发送余额表、调用银行／飞书／ERP、执行真实发布，亦不会把 Claim 伪装成 Fact。</p>
+          </section>
+        </div>
+      </div>
+      <noscript><div class="callout"><strong>无脚本阅读：</strong>默认静态表展示 2026-W34 的三个合成账户均通过规则检查。正常交互顺序为 Dependency Snapshot → Claim → 人工 Decision → 外部 Execution/Outcome → Reality Fact → Evidence；本页面始终不执行真实发布。浏览器禁用脚本时无法切换四种场景或生成合成 UI 记录。</div></noscript>
+    </section>
+
+    <section class="band" id="episode">
+      <div class="shell">
+        <p class="eyebrow">Decision Episode</p>
+        <h2>人工判断不覆盖系统 Baseline</h2>
+        <p class="section-intro">一次可复盘的发布，不只保存“发了或没发”，还要保留当时依赖、原始建议、人工干预、实际执行与后来现实。</p>
+        <div class="episode" aria-label="Decision Episode 六阶段">
+          <article class="episode-step active" id="step-baseline"><b>01</b><h3>Decision Baseline</h3><p>Capability 基于冻结依赖形成原始发布建议。</p></article>
+          <article class="episode-step" id="step-intervention"><b>02</b><h3>Intervention</h3><p>记录提出者、授权、时间、新事实与 Declared Rationale。</p></article>
+          <article class="episode-step" id="step-decision"><b>03</b><h3>Final Decision</h3><p>由责任岗位冻结正式选择；Baseline 仍保持可见。</p></article>
+          <article class="episode-step" id="step-execution"><b>04</b><h3>Execution</h3><p>真实发布由外部受控系统执行；本页面不执行。</p></article>
+          <article class="episode-step" id="step-reality"><b>05</b><h3>Reality Fact</h3><p>平台接收、补录与差错反馈形成后来事实。</p></article>
+          <article class="episode-step" id="step-evidence"><b>06</b><h3>Evidence</h3><p>连接历史 Claim 与后来 Fact，支持下一轮评估。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell" id="boundary">
+      <p class="eyebrow">Governance boundary</p>
+      <h2 id="boundary-title">Portable View 可读；可选作者层可编辑、可连线，但没有高权限</h2>
+      <p class="section-intro" id="boundary-intro">可携带 HTML 并不天然安全。这个发布版主动收窄能力：内容安全策略禁止脚本后台联网、嵌入外部页面与提交表单；本地作者层必须显式开启，编辑只在内存中发生，另存、导出或打开作者添加的链接都必须由使用者主动触发。</p>
+      <div class="boundary-grid">
+        <article class="boundary-card allowed" id="boundary-allowed"><h3>本页面允许</h3><ul><li>在默认阅读态查看公开案例，并显式开启本地作者层</li><li>插入并编辑合成表格、切换本地图表、拖动对象观察文字避让</li><li>为模块建立可调整的关系连线与文档链接</li><li>在内存中运行固定合成场景，模拟 Decision 与 Reality 验证</li><li>主动另存非权威可编辑副本，或导出非权威只读快照</li></ul></article>
+        <article class="boundary-card denied"><h3>本页面不允许</h3><ul><li>由页面脚本后台连接银行、飞书、ERP、API 或网络服务</li><li>自动读取、上传或持久化真实账户与余额文件</li><li>使用 IndexedDB、localStorage 静默覆盖页面内容</li><li>执行真实发布、付款、审批或系统写入</li></ul></article>
+      </div>
+      <div class="publication-note" id="whitepaper">
+        <p><strong>配套阅读：</strong>白皮书说明通用概念、认知类型与运行治理；本页把最小闭环落到一个账户管理场景。工程字段与 Conformance 仍以规划中的 Core Protocol Specification 为准。</p>
+        <a class="doc-link" href="./超元网络白皮书_正式版_v1.2.docx">打开 Word 白皮书 v1.2</a>
+      </div>
+    </section>
+
+    <section class="band" id="manifest-section">
+      <div class="shell">
+        <p class="eyebrow">Embedded structure</p>
+        <h2>公开示例 Manifest</h2>
+        <p class="section-intro">这是供读者和机器理解页面边界的非规范性摘要。它不授予权限，也不等于 Registry 或 Identity 的权威真值。</p>
+        <details>
+          <summary>查看嵌入的 HyperUnit Manifest</summary>
+          <pre id="manifest-view" aria-label="HyperUnit Manifest JSON"></pre>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-grid"><p id="release-footer">HyperUnit Network · 白皮书配套案例 · 联合发布版 V0.3</p><p>合成数据 · 概念演示 · 2026-08-20</p></div>
+  </footer>
+
+  <script id="hyperunit-manifest" type="application/json">
+{
+  "schema": "hyperunit-manifest/0.1-draft",
+  "status": "non-normative-public-example",
+  "publication_version": "V0.3",
+  "artifact_role": "authoritative-public-example-source",
+  "authoritative": true,
+  "unit_id": "hu.example.treasury.weekly-bank-balance-prepublish-check",
+  "title": "银行账户周余额发布前校验",
+  "version": "V0.3",
+  "responsibility": "在每周银行余额表发布前识别账户遗漏、重复、币种与状态冲突，并形成可解释校验 Claim",
+  "profile": "standard",
+  "automation_state": "assisted",
+  "single_write_authority": "public-example-source",
+  "capability": {
+    "id": "prepublish-check",
+    "version": "0.1.0",
+    "output_type": "Claim"
+  },
+  "typed_inputs": [
+    {"type": "Fact", "name": "account-master"},
+    {"type": "Fact", "name": "weekly-balance"},
+    {"type": "Configuration", "name": "prepublish-policy"}
+  ],
+  "editorial_layer": {
+    "scope": "local-authoring-and-layout-demonstration",
+    "portable_view_protocol_capability": false,
+    "managed_run": false,
+    "authority_effect": "none",
+    "export_policy": "all-edited-exports-are-non-authoritative-replicas"
+  },
+  "local_editorial_permissions": ["local-editing", "synthetic-table-editing", "dynamic-layout-authoring", "explicit-file-export", "safe-link-authoring"],
+  "network_access": false,
+  "local_file_access": "user-initiated-write-only",
+  "persistent_storage": false,
+  "data_classification": "synthetic-demo-only",
+  "reality_simulation": {
+    "ui_records_only": true,
+    "executes_real_publication": false,
+    "persists_or_transmits_data": false
+  },
+  "links": {
+    "whitepaper": "./超元网络白皮书_正式版_v1.2.docx"
+  }
+}
+  </script>
+  <script id="page-editor-state" type="application/json">
+{
+  "schema": "hyperunit-page-editor/2",
+  "revision": 1,
+  "motion_effect": "flow",
+  "demo": {
+    "scenario": "pass",
+    "has_run": false,
+    "decision_recorded": false,
+    "reality_recorded": false,
+    "record": null
+  },
+  "connectors_visible": true,
+  "connectors": [
+    {"id": "episode-baseline-intervention", "from": "step-baseline", "to": "step-intervention", "kind": "default"},
+    {"id": "episode-intervention-decision", "from": "step-intervention", "to": "step-decision", "kind": "default"},
+    {"id": "episode-decision-execution", "from": "step-decision", "to": "step-execution", "kind": "default"},
+    {"id": "episode-execution-reality", "from": "step-execution", "to": "step-reality", "kind": "default"},
+    {"id": "episode-reality-evidence", "from": "step-reality", "to": "step-evidence", "kind": "default"}
+  ],
+  "layout": {
+    "schema": "hyperunit-dynamic-layout/1",
+    "revision": 1,
+    "objects": [
+      {
+        "id": "layout-data-account-trend",
+        "title": "合成账户校验趋势（独立历史序列）",
+        "stageWidth": 1100,
+        "x": 640,
+        "y": 116,
+        "width": 420,
+        "height": 320,
+        "wrapMargin": 22,
+        "zIndex": 10,
+        "viewMode": "chart",
+        "chartType": "column",
+        "tableData": [
+          ["周次", "覆盖账户数", "异常项"],
+          ["W31", 3, 0],
+          ["W32", 3, 1],
+          ["W33", 3, 0],
+          ["W34", 3, 0]
+        ]
+      }
+    ]
+  }
+}
+  </script>
+  <script>
+    (() => {
+      "use strict";
+
+      const scenarios = {
+        pass: {
+          state: "pass", icon: "✓", code: "CLAIM:CAN_PUBLISH",
+          title: "校验 Claim：未发现阻断项",
+          detail: "3 个账户均被台账覆盖，来源、币种、状态与唯一性规则通过。最终发布仍需责任岗位形成 Decision。",
+          claim: "Claim / CanPublish = true；confidence = bounded-by-rules；依据账户主数据、周余额数据中的 3 条账户记录与 prepublish-policy@1.4.0。",
+          master: "acct-master@2026-08-18T16:00+08:00",
+          balance: "weekly-balance@2026-W34-r03",
+          config: "prepublish-policy@1.4.0",
+          decisionAllowed: true,
+          rows: [
+            ["华东运营户 · ****2208", "CNY", "Active", "¥12,480,000", "银行回单", "通过", "ok"],
+            ["总部美元户 · ****0716", "USD", "Active", "$820,000", "银行回单", "通过", "ok"],
+            ["华南税务户 · ****9031", "CNY", "Active", "¥3,260,000", "网银导出", "通过", "ok"]
+          ]
+        },
+        warning: {
+          state: "warning", icon: "!", code: "CLAIM:REVIEW_REQUIRED",
+          title: "校验 Claim：需要人工确认",
+          detail: "账户 ****4420 在台账中标记 Dormant，但本周出现余额；规则不能判断是临时复用还是台账未更新。",
+          claim: "Claim / CanPublish = indeterminate；reason = STATUS_CONFLICT；必须记录新事实与人工 Rationale。",
+          master: "acct-master@2026-08-18T16:00+08:00",
+          balance: "weekly-balance@2026-W34-r04",
+          config: "prepublish-policy@1.4.0",
+          decisionAllowed: true,
+          rows: [
+            ["华东运营户 · ****2208", "CNY", "Active", "¥12,480,000", "银行回单", "通过", "ok"],
+            ["临时保证金户 · ****4420", "CNY", "Dormant", "¥680,000", "网银导出", "状态冲突", "warn"],
+            ["华南税务户 · ****9031", "CNY", "Active", "¥3,260,000", "网银导出", "通过", "ok"]
+          ]
+        },
+        blocked: {
+          state: "blocked", icon: "×", code: "CLAIM:BLOCK",
+          title: "校验 Claim：发现阻断异常",
+          detail: "工作表包含一个未知账户，并重复出现 ****9031；在修正输入前不得把该 Claim 解释为发布许可。",
+          claim: "Claim / CanPublish = false；reasons = UNKNOWN_ACCOUNT, DUPLICATE_ROW；需先修正 Fact 输入并重算。",
+          master: "acct-master@2026-08-18T16:00+08:00",
+          balance: "weekly-balance@2026-W34-r05",
+          config: "prepublish-policy@1.4.0",
+          decisionAllowed: false,
+          rows: [
+            ["华东运营户 · ****2208", "CNY", "Active", "¥12,480,000", "银行回单", "通过", "ok"],
+            ["未登记账户 · ****5888", "CNY", "Unknown", "¥240,000", "手工填报", "未知账户", "fail"],
+            ["华南税务户 · ****9031", "CNY", "Active", "¥3,260,000", "网银导出", "重复行", "fail"],
+            ["华南税务户 · ****9031", "CNY", "Active", "¥3,260,000", "网银导出", "重复行", "fail"]
+          ]
+        },
+        stale: {
+          state: "stale", icon: "↻", code: "DEPENDENCY:STALE",
+          title: "未形成新 Claim：依赖已过期",
+          detail: "账户主数据在 Snapshot 之后更新；必须 Dependency Pull 并按最新版本重算，不能沿用上一轮结论。",
+          claim: "No new Claim；reason = STALE_DEPENDENCY。调用前新鲜度核验失败，历史 Claim 保留但不得当作当前结论。",
+          master: "acct-master@2026-08-20T10:16+08:00 · NEW",
+          balance: "weekly-balance@2026-W34-r03",
+          config: "prepublish-policy@1.4.0",
+          decisionAllowed: false,
+          rows: [
+            ["华东运营户 · ****2208", "CNY", "Active", "¥12,480,000", "银行回单", "待重算", "warn"],
+            ["总部美元户 · ****0716", "USD", "Active", "$820,000", "银行回单", "待重算", "warn"],
+            ["华南税务户 · ****9031", "CNY", "状态已变更", "¥3,260,000", "网银导出", "依赖过期", "fail"]
+          ]
+        }
+      };
+
+      const $ = id => document.getElementById(id);
+      const scenarioSelect = $("scenario");
+      const resultBar = $("result-bar");
+      const decisionButton = $("record-decision");
+      const realityButton = $("simulate-reality");
+      let hasRun = false;
+      let decisionRecorded = false;
+      let realityRecorded = false;
+      let demoRecord = null;
+      let applyingDemoState = false;
+
+      const escapeText = value => String(value);
+      const episodeOrder = ["step-baseline", "step-intervention", "step-decision", "step-execution", "step-reality", "step-evidence"];
+
+      function boundedText(value, fallback = "尚未形成", maximum = 600) {
+        const text = String(value ?? "").trim().slice(0, maximum);
+        return text || fallback;
+      }
+
+      function syntheticId(prefix) {
+        const bytes = new Uint32Array(2);
+        if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+        else {
+          bytes[0] = Date.now() >>> 0;
+          bytes[1] = Math.floor(Math.random() * 0xffffffff) >>> 0;
+        }
+        return `${prefix}-${Date.now().toString(36)}-${Array.from(bytes, value => value.toString(36)).join("")}`;
+      }
+
+      function notifyDemoHistory(label) {
+        if (applyingDemoState) return;
+        window.dispatchEvent(new CustomEvent("hyperunit-demo-change", { detail: { label } }));
+      }
+
+      function renderRows(rows) {
+        const tbody = $("account-rows");
+        tbody.replaceChildren(...rows.map(row => {
+          const tr = document.createElement("tr");
+          row.slice(0, 5).forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = escapeText(value);
+            tr.appendChild(td);
+          });
+          const resultCell = document.createElement("td");
+          const badge = document.createElement("span");
+          badge.className = `row-state ${row[6]}`;
+          badge.textContent = escapeText(row[5]);
+          resultCell.appendChild(badge);
+          tr.appendChild(resultCell);
+          return tr;
+        }));
+      }
+
+      function activateStep(id) {
+        const activeIndex = Math.max(0, episodeOrder.indexOf(id));
+        episodeOrder.forEach((stepId, index) => {
+          const step = $(stepId);
+          step.classList.toggle("active", index === activeIndex);
+          step.classList.toggle("completed", index < activeIndex);
+        });
+      }
+
+      function clearRealityView() {
+        $("reality-baseline-id").textContent = "尚未形成";
+        $("reality-actor").textContent = "尚未形成";
+        $("reality-decided-at").textContent = "尚未形成";
+        $("reality-rationale").textContent = "尚未形成";
+        $("reality-decision").textContent = "尚未形成";
+        $("reality-dependencies").textContent = "尚未形成";
+        $("reality-outcome").textContent = "等待人工 Decision";
+        $("reality-fact").textContent = "等待模拟后续结果";
+        $("reality-evidence-status").textContent = "NOT_OBSERVED";
+        $("reality-evidence").textContent = "尚未生成";
+      }
+
+      function renderRealityView() {
+        if (!demoRecord) {
+          clearRealityView();
+          return;
+        }
+        $("reality-baseline-id").textContent = boundedText(demoRecord.baseline_id);
+        $("reality-actor").textContent = boundedText(demoRecord.actor);
+        $("reality-decided-at").textContent = boundedText(demoRecord.decided_at);
+        $("reality-rationale").textContent = boundedText(demoRecord.rationale);
+        $("reality-decision").textContent = boundedText(demoRecord.decision);
+        $("reality-dependencies").textContent = Array.isArray(demoRecord.dependency_refs)
+          ? demoRecord.dependency_refs.map(value => boundedText(value, "", 180)).filter(Boolean).join(" · ")
+          : "尚未形成";
+        $("reality-outcome").textContent = boundedText(demoRecord.outcome, "等待模拟后续结果");
+        $("reality-fact").textContent = boundedText(demoRecord.reality_fact, "等待模拟后续结果");
+        $("reality-evidence-status").textContent = boundedText(demoRecord.evidence_status, "PENDING_REALITY");
+        $("reality-evidence").textContent = boundedText(demoRecord.evidence, "尚未生成");
+      }
+
+      function renderScenarioResult(current) {
+        resultBar.className = `result-bar ${current.state}`;
+        $("result-icon").textContent = current.icon;
+        $("result-title").textContent = current.title;
+        $("result-detail").textContent = current.detail;
+        $("result-code").textContent = current.code;
+        $("claim-text").textContent = current.claim;
+        $("master-version").textContent = current.master;
+        $("balance-version").textContent = current.balance;
+        $("config-version").textContent = current.config;
+        renderRows(current.rows);
+      }
+
+      function renderDemoState() {
+        const current = scenarios[scenarioSelect.value];
+        if (!hasRun) {
+          resultBar.className = "result-bar pass";
+          $("result-icon").textContent = "✓";
+          $("result-title").textContent = "等待运行合成校验";
+          $("result-detail").textContent = "默认展示 2026-W34 的 3 个合成账户全部通过；点击运行后形成新的示例 Claim。";
+          $("result-code").textContent = "NOT_RUN";
+          $("claim-text").textContent = "尚未运行。输出不会被当作 Fact，也不会自动成为发布 Decision。";
+          $("master-version").textContent = scenarios.pass.master;
+          $("balance-version").textContent = scenarios.pass.balance;
+          $("config-version").textContent = scenarios.pass.config;
+          renderRows(scenarios.pass.rows);
+          decisionButton.disabled = true;
+          realityButton.disabled = true;
+          $("decision-note").textContent = "请先运行合成校验。";
+          clearRealityView();
+          activateStep("step-baseline");
+          return;
+        }
+        renderScenarioResult(current);
+        decisionButton.disabled = decisionRecorded || !current.decisionAllowed;
+        realityButton.disabled = !decisionRecorded || realityRecorded;
+        if (!decisionRecorded) {
+          $("decision-note").textContent = current.decisionAllowed
+            ? "可继续模拟人工接受或带条件确认；不会执行真实发布。"
+            : "该场景不允许形成发布 Decision；请先修正或重算。";
+          clearRealityView();
+          activateStep(current.state === "warning" ? "step-intervention" : "step-baseline");
+        } else {
+          $("decision-note").textContent = current.state === "warning"
+            ? "已模拟记录：带条件暂停；Declared Rationale = 等待账户状态确认。Baseline 未被覆盖。"
+            : "已模拟记录：接受发布建议。Baseline、Actor、时间与依赖引用保持可见。";
+          renderRealityView();
+          activateStep(realityRecorded ? "step-evidence" : "step-decision");
+        }
+      }
+
+      function runScenario() {
+        hasRun = true;
+        decisionRecorded = false;
+        realityRecorded = false;
+        demoRecord = null;
+        renderDemoState();
+        notifyDemoHistory("运行合成校验");
+      }
+
+      function recordDecision() {
+        if (!hasRun || decisionRecorded || decisionButton.disabled) return;
+        const current = scenarios[scenarioSelect.value];
+        decisionRecorded = true;
+        const isWarning = current.state === "warning";
+        demoRecord = {
+          baseline_id: syntheticId(`baseline-2026-w34-${current.state}`),
+          actor: "synthetic-role:funds-operations-b",
+          decided_at: new Date().toISOString(),
+          rationale: isWarning ? "等待 Dormant 账户状态确认；暂停发送且不覆盖原始 Baseline。" : "规则范围内未发现阻断项；接受发布建议进入受控外部执行。",
+          decision: isWarning ? "PAUSE_WITH_CONDITION" : "ACCEPT_RECOMMENDATION",
+          dependency_refs: [current.master, current.balance, current.config],
+          execution_id: null,
+          outcome: null,
+          reality_fact_id: null,
+          reality_fact: null,
+          evidence_id: null,
+          evidence_status: "PENDING_REALITY",
+          evidence: null
+        };
+        renderDemoState();
+        notifyDemoHistory("记录人工 Decision");
+      }
+
+      function simulateReality() {
+        if (!decisionRecorded || realityRecorded || !demoRecord) return;
+        const current = scenarios[scenarioSelect.value];
+        const observedAt = new Date().toISOString();
+        const paused = current.state === "warning";
+        demoRecord.execution_id = syntheticId("execution-ui-record");
+        demoRecord.outcome = paused
+          ? `SYNTHETIC_WITHHELD · ${demoRecord.execution_id}`
+          : `SYNTHETIC_TARGET_ACCEPTED · ${demoRecord.execution_id}`;
+        demoRecord.reality_fact_id = syntheticId("reality-fact-ui-record");
+        demoRecord.reality_fact = paused
+          ? `未向外部系统发送；截至 ${observedAt} 仍等待账户状态确认（合成 Fact）。`
+          : `模拟目标平台已接收 2026-W34 的 3 条账户记录；未返回差错（合成 Fact，observed_at=${observedAt}）。`;
+        demoRecord.evidence_id = syntheticId("evidence-ui-record");
+        demoRecord.evidence_status = paused ? "CONSISTENT_WITH_PAUSE_DECISION" : "SUPPORTS_BASELINE_WITHIN_SYNTHETIC_SCOPE";
+        demoRecord.evidence = `${demoRecord.evidence_id} 将 Claim/Baseline、人工 Decision 与后来合成 Reality Fact 关联；不构成真实发布凭证。`;
+        realityRecorded = true;
+        renderDemoState();
+        notifyDemoHistory("模拟 Reality 验证");
+      }
+
+      function resetDemo() {
+        scenarioSelect.value = "pass";
+        hasRun = false;
+        decisionRecorded = false;
+        realityRecorded = false;
+        demoRecord = null;
+        renderDemoState();
+        notifyDemoHistory("重置合成校验");
+      }
+
+      function captureDemoState() {
+        return {
+          scenario: scenarioSelect.value,
+          has_run: hasRun,
+          decision_recorded: decisionRecorded,
+          reality_recorded: realityRecorded,
+          record: demoRecord ? JSON.parse(JSON.stringify(demoRecord)) : null
+        };
+      }
+
+      function applyDemoState(state = {}) {
+        applyingDemoState = true;
+        const scenario = Object.prototype.hasOwnProperty.call(scenarios, state.scenario) ? state.scenario : "pass";
+        scenarioSelect.value = scenario;
+        hasRun = state.has_run === true;
+        decisionRecorded = hasRun && scenarios[scenario].decisionAllowed && state.decision_recorded === true;
+        realityRecorded = decisionRecorded && state.reality_recorded === true;
+        demoRecord = decisionRecorded && state.record && typeof state.record === "object"
+          ? JSON.parse(JSON.stringify(state.record)) : null;
+        if (!demoRecord) {
+          decisionRecorded = false;
+          realityRecorded = false;
+        }
+        renderDemoState();
+        applyingDemoState = false;
+      }
+
+      $("run-check").addEventListener("click", runScenario);
+      $("reset-demo").addEventListener("click", resetDemo);
+      decisionButton.addEventListener("click", recordDecision);
+      realityButton.addEventListener("click", simulateReality);
+      scenarioSelect.addEventListener("change", () => {
+        hasRun = false;
+        decisionRecorded = false;
+        realityRecorded = false;
+        demoRecord = null;
+        renderDemoState();
+        $("decision-note").textContent = "场景已切换，请重新运行合成校验。";
+        notifyDemoHistory("切换合成场景");
+      });
+
+      window.hyperunitDemo = Object.freeze({ captureState: captureDemoState, applyState: applyDemoState });
+      let initialDemoState = {};
+      try { initialDemoState = JSON.parse($("page-editor-state")?.textContent || "{}").demo || {}; } catch (error) { initialDemoState = {}; }
+      applyDemoState(initialDemoState);
+
+      const manifestText = $("hyperunit-manifest").textContent.trim();
+      $("manifest-view").textContent = JSON.stringify(JSON.parse(manifestText), null, 2);
+    })();
+  </script>
+  <script id="page-editor-runtime">
+    (() => {
+      "use strict";
+
+      const byId = id => document.getElementById(id);
+      const toolbar = byId("editor-toolbar");
+      if (!toolbar) return;
+
+      const htmlRoot = document.documentElement;
+      const statusNode = byId("editor-status");
+      const editorToggle = byId("editor-toggle");
+      const collapseButton = byId("editor-collapse");
+      const undoButton = byId("history-undo");
+      const redoButton = byId("history-redo");
+      const connectorLayer = byId("connector-layer");
+      const connectorPaths = byId("connector-paths");
+      const connectionSummary = byId("connection-summary");
+      const motionControl = byId("motion-effect");
+      const editorStateNode = byId("page-editor-state");
+      const layoutStage = byId("layout-stage");
+      const layoutSource = byId("layout-source");
+      const layoutTextLayer = byId("layout-text-layer");
+      const layoutObjectLayer = byId("layout-object-layer");
+      const layoutSemanticDocument = byId("layout-semantic-document");
+      const layoutStatus = byId("layout-status");
+      const editorialDemoSection = byId("dynamic-layout");
+      const editorialDemoToggle = byId("editorial-demo-toggle");
+      const artifactStatusBanner = byId("artifact-status-banner");
+      const editorModeMeta = document.querySelector('meta[name="hyperunit-editor-mode"]');
+      const documentMode = editorModeMeta?.content === "readonly" ? "readonly" : "editable";
+      htmlRoot.dataset.editorMode = documentMode;
+
+      const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const forbiddenElements = "script,style,iframe,object,embed,form,input,button,textarea,select,option,meta,link,base,svg,math,video,audio,canvas";
+      const dynamicIds = new Set([
+        "result-title", "result-detail", "claim-text", "decision-note", "master-version",
+        "balance-version", "config-version", "manifest-view", "result-code", "result-icon",
+        "reality-baseline-id", "reality-actor", "reality-decided-at", "reality-rationale",
+        "reality-decision", "reality-dependencies", "reality-outcome", "reality-fact",
+        "reality-evidence-status", "reality-evidence"
+      ]);
+      const editableSelector = [
+        ".brand-copy strong", ".brand-copy small", "main h1", "main h2", "main h3", "main h4",
+        ".lede", ".section-intro", ".chip", ".hero-card dt", ".hero-card dd", ".callout",
+        ".principle p", ".demo-head p", "table caption", "thead th", ".mini-card li",
+        ".decision-box > p", ".episode-step p", ".boundary-card li", ".publication-note p",
+        "summary", ".site-footer p", "#layout-source"
+      ].join(",");
+      const connectableSelector = [
+        ".hero-card", ".principle", ".snapshot", ".result-bar", ".table-wrap", ".mini-card",
+        ".episode-step", ".boundary-card", ".publication-note", ".reality-panel", "details", ".layout-data-object"
+      ].join(",");
+      const motionItemSelector = [
+        ".hero-grid > *", ".principle", "main section > .eyebrow", "main section > h2",
+        "main section > .section-intro", ".demo-wrap", ".episode-step", ".boundary-card",
+        ".publication-note", "details", ".layout-workspace"
+      ].join(",");
+
+      let parsedState = {};
+      try { parsedState = JSON.parse(editorStateNode?.textContent || "{}"); } catch (error) { parsedState = {}; }
+      let stateRevision = Number(parsedState.revision) || 1;
+      let motionEffect = ["flow", "reveal", "focus", "none"].includes(parsedState.motion_effect)
+        ? parsedState.motion_effect : "flow";
+      let connectorsVisible = parsedState.connectors_visible !== false;
+      let connectors = Array.isArray(parsedState.connectors)
+        ? parsedState.connectors.filter(item => item && typeof item.id === "string" && typeof item.from === "string" && typeof item.to === "string")
+        : [];
+      let editorEnabled = false;
+      let connectionMode = false;
+      let connectionSource = null;
+      let savedRange = null;
+      let savedFileHandle = null;
+      let history = [];
+      let historyIndex = -1;
+      let historyTimer = 0;
+      let applyingHistory = false;
+      let motionObserver = null;
+      let redrawFrame = 0;
+      let resizeTimer = 0;
+      let layoutObjects = [];
+      let layoutBlocks = [];
+      let layoutTokens = [];
+      let layoutTopZ = 10;
+      let layoutInteraction = null;
+      let layoutInteractionFrame = 0;
+      let layoutFrame = 0;
+      let layoutSourceTimer = 0;
+      let layoutStageWidth = 0;
+      let layoutResizeObserver = null;
+      let connectorResizeObserver = null;
+      let activeLayoutCellEdit = null;
+      let activeQuickEditor = null;
+      let quickTapCandidate = null;
+      let lastQuickTap = null;
+      let layoutKeyboardHistoryTimer = 0;
+      let localModified = document.body.classList.contains("local-modified");
+      const HISTORY_LIMIT = 60;
+      const runtimeOnlyHistoryLabels = new Set(["运行合成校验", "记录人工 Decision", "模拟 Reality 验证", "重置合成校验", "切换合成场景"]);
+      const tokenPositionCache = new Map();
+      const layoutChartTypes = new Set(["line", "area", "column", "bar", "pie", "doughnut"]);
+
+      function announce(message, warning = false) {
+        statusNode.textContent = message;
+        statusNode.classList.toggle("is-warning", warning);
+      }
+
+      function markLocalModified() {
+        if (localModified) return;
+        localModified = true;
+        document.body.classList.add("local-modified");
+        artifactStatusBanner.textContent = "本地已修改／非官方副本 · non-authoritative-replica；不得替代发布源或声称单一写权。";
+        const roleMeta = document.querySelector('meta[name="hyperunit-artifact-role"]');
+        roleMeta?.setAttribute("content", "non-authoritative-local-working-copy");
+        const manifestNode = byId("hyperunit-manifest");
+        if (manifestNode) {
+          let manifest = {};
+          try { manifest = JSON.parse(manifestNode.textContent || "{}"); } catch (error) { manifest = {}; }
+          const originalUnitId = String(manifest.unit_id || "hu.example.treasury.weekly-bank-balance-prepublish-check");
+          manifest.status = "non-authoritative-unexported-local-modification";
+          manifest.artifact_role = "non-authoritative-local-working-copy";
+          manifest.authoritative = false;
+          manifest.derived_from = originalUnitId;
+          manifest.single_write_authority = "none (local modification is non-authoritative)";
+          manifestNode.textContent = jsonForInlineScript(manifest);
+          const view = byId("manifest-view");
+          if (view) view.textContent = JSON.stringify(manifest, null, 2);
+        }
+      }
+
+      function isEditorialDemoExpanded() {
+        return Boolean(editorialDemoSection && !editorialDemoSection.classList.contains("is-collapsed"));
+      }
+
+      function isLayoutDemoActive() {
+        return documentMode !== "readonly" && !editorEnabled && isEditorialDemoExpanded();
+      }
+
+      function canMoveLayoutObjects() {
+        return !connectionMode && (editorEnabled || isLayoutDemoActive());
+      }
+
+      function canResizeLayoutObjects() {
+        return !connectionMode && (editorEnabled || isLayoutDemoActive());
+      }
+
+      function updateLayoutObjectAffordances() {
+        const movable = canMoveLayoutObjects();
+        const resizable = canResizeLayoutObjects();
+        layoutObjects.forEach(object => {
+          const bar = object.element?.querySelector(".layout-object-bar");
+          const resizeHandle = object.element?.querySelector(".layout-resize-handle");
+          if (bar) {
+            bar.tabIndex = movable ? 0 : -1;
+            bar.setAttribute("aria-disabled", String(!movable));
+            bar.setAttribute("aria-label", movable
+              ? `拖动${object.title}；也可用方向键移动，Shift 加速`
+              : `${object.title}拖动把手；展开本地排版演示或开启编辑后可用`);
+            bar.title = movable ? "鼠标或触控拖动；方向键微调，Shift＋方向键大步移动" : "展开本地排版演示后可拖动";
+          }
+          if (resizeHandle) {
+            resizeHandle.disabled = !resizable;
+            resizeHandle.tabIndex = resizable ? 0 : -1;
+            resizeHandle.setAttribute("aria-disabled", String(!resizable));
+            resizeHandle.setAttribute("aria-label", resizable
+              ? `调整${object.title}大小；方向键改变宽高，Shift 加速`
+              : `${object.title}调整大小把手；展开本地排版演示或开启编辑后可用`);
+            resizeHandle.title = resizable
+              ? "鼠标或触控拖动右下角；方向键调整宽高，Shift＋方向键大步调整"
+              : "展开本地排版演示后可调整大小";
+          }
+        });
+      }
+
+      function updateQuickEditAffordances() {
+        const active = isLayoutDemoActive() && !connectionMode && !activeQuickEditor;
+        layoutTextLayer?.querySelectorAll('[data-quick-edit-trigger="true"]').forEach(trigger => {
+          trigger.tabIndex = active ? 0 : -1;
+          trigger.setAttribute("aria-disabled", String(!active));
+        });
+      }
+
+      function updateLayoutAccessibility() {
+        const demoActive = isLayoutDemoActive();
+        layoutTextLayer?.setAttribute("aria-hidden", String(!demoActive));
+        layoutSemanticDocument?.setAttribute("aria-hidden", String(editorEnabled || demoActive));
+      }
+
+      function updateLayoutDemoMode() {
+        const demoActive = isLayoutDemoActive();
+        document.body.classList.toggle("layout-demo-active", demoActive);
+        if (!demoActive && activeQuickEditor) finishQuickTextEdit(true);
+        updateLayoutObjectAffordances();
+        updateQuickEditAffordances();
+        updateLayoutAccessibility();
+        updateHistoryButtons();
+      }
+
+      function setEditorialDemoExpanded(expanded) {
+        if (!editorialDemoSection || !editorialDemoToggle) return;
+        const next = Boolean(expanded);
+        if (!next && layoutInteraction) finishLayoutInteraction(null);
+        const label = documentMode === "readonly" ? "排版快照" : "本地排版演示";
+        editorialDemoSection.classList.toggle("is-collapsed", !next);
+        editorialDemoToggle.setAttribute("aria-expanded", String(next));
+        editorialDemoToggle.textContent = next ? `收起${label}` : `${documentMode === "readonly" ? "查看" : "展开"}${label}`;
+        updateLayoutDemoMode();
+        if (next) {
+          if (layoutStatus && documentMode !== "readonly" && !editorEnabled) {
+            layoutStatus.textContent = "演示状态：拖动对象顶部把手可移动，拖动右下角可调整大小；双击画布文字可快速编辑当前段落。";
+          }
+          if (isLayoutDemoActive()) announce("排版演示已展开：可移动或调整对象大小，并双击画布文字快速编辑；无需开启全局编辑。");
+          requestAnimationFrame(() => {
+            resizeDynamicLayoutToStage();
+            scheduleDynamicLayout();
+            scheduleConnectorDraw();
+          });
+        } else if (documentMode !== "readonly" && !editorEnabled) {
+          announce(localModified
+            ? "阅读模式 · 本地修改仍在内存中；另存或导出后均为非官方副本。"
+            : "阅读模式 · 官方 V0.3 源文件未修改。", localModified);
+        }
+      }
+
+      function safeLinkHref(value) {
+        const href = String(value || "").trim();
+        if (!href) return "";
+        const match = href.match(/^([a-z][a-z0-9+.-]*):/iu);
+        if (match && !["http", "https", "mailto", "tel", "file"].includes(match[1].toLowerCase())) return "";
+        if (/^(?:javascript|data|vbscript):/iu.test(href)) return "";
+        return href;
+      }
+
+      function sanitiseHtml(html) {
+        const template = document.createElement("template");
+        template.innerHTML = String(html || "");
+        template.content.querySelectorAll(forbiddenElements).forEach(element => element.remove());
+        template.content.querySelectorAll("*").forEach(element => {
+          Array.from(element.attributes).forEach(attribute => {
+            const name = attribute.name.toLowerCase();
+            if (name.startsWith("on") || name === "srcdoc") element.removeAttribute(attribute.name);
+            if (name === "style" && /(?:url\s*\(|expression\s*\(|behavior\s*:)/iu.test(attribute.value)) {
+              element.removeAttribute("style");
+            }
+          });
+          if (element.tagName === "A") {
+            const safeHref = safeLinkHref(element.getAttribute("href"));
+            if (safeHref) element.setAttribute("href", safeHref);
+            else element.removeAttribute("href");
+            element.removeAttribute("target");
+            element.setAttribute("rel", "noreferrer");
+          }
+        });
+        return template.innerHTML;
+      }
+
+      function sanitiseQuickTextHtml(html) {
+        const template = document.createElement("template");
+        template.innerHTML = String(html || "");
+        const allowed = new Set(["BR", "B", "STRONG", "I", "EM", "U", "S", "SPAN", "A", "FONT", "SUB", "SUP"]);
+        Array.from(template.content.querySelectorAll("*")).reverse().forEach(element => {
+          if (!allowed.has(element.tagName)) element.replaceWith(...element.childNodes);
+        });
+        return sanitiseHtml(template.innerHTML);
+      }
+
+      function jsonForInlineScript(value) {
+        return JSON.stringify(value, null, 2)
+          .replace(/</gu, "\\u003c")
+          .replace(/\u2028/gu, "\\u2028")
+          .replace(/\u2029/gu, "\\u2029");
+      }
+
+      function unwrapDynamicTokens(root) {
+        root.querySelectorAll?.(".dynamic-token").forEach(token => {
+          token.replaceWith(token.ownerDocument.createTextNode(token.textContent || ""));
+        });
+        root.normalize?.();
+      }
+
+      function cleanEditableHtml(element) {
+        const clone = element.cloneNode(true);
+        unwrapDynamicTokens(clone);
+        clone.querySelectorAll?.("[data-link-status]").forEach(node => node.removeAttribute("data-link-status"));
+        return sanitiseHtml(clone.innerHTML);
+      }
+
+      const editableElements = Array.from(document.querySelectorAll(editableSelector)).filter(element => {
+        if (toolbar.contains(element) || dynamicIds.has(element.id)) return false;
+        if (element !== layoutSource && element.closest("#layout-source")) return false;
+        if (element.closest("#manifest-section pre, #account-rows, button, select")) return false;
+        return true;
+      });
+      editableElements.forEach((element, index) => {
+        if (!element.dataset.editId) element.dataset.editId = `edit-${String(index + 1).padStart(3, "0")}`;
+        element.dataset.editorial = "true";
+        element.setAttribute("contenteditable", "false");
+      });
+
+      initialiseDynamicLayout(parsedState.layout || {});
+
+      let connectableElements = [];
+      function refreshConnectableElements() {
+        connectorResizeObserver?.disconnect();
+        connectableElements = Array.from(document.querySelectorAll(connectableSelector));
+        connectableElements.forEach((element, index) => {
+          element.dataset.connectable = "true";
+          if (!element.dataset.connectId) element.dataset.connectId = element.id || `node-${String(index + 1).padStart(3, "0")}`;
+          connectorResizeObserver?.observe(element);
+        });
+      }
+      refreshConnectableElements();
+      document.querySelectorAll(motionItemSelector).forEach(element => { element.dataset.motionItem = "true"; });
+
+      function endpointElement(reference) {
+        return document.getElementById(reference) || connectableElements.find(element => element.dataset.connectId === reference) || null;
+      }
+
+      function endpointReference(element) {
+        return element.id || element.dataset.connectId || "";
+      }
+
+      function endpointLabel(element) {
+        const labelled = element.getAttribute("aria-label") || element.querySelector("h2,h3,h4,strong")?.textContent || element.textContent || endpointReference(element);
+        return labelled.trim().replace(/\s+/gu, " ").slice(0, 30);
+      }
+
+      function layoutClamp(value, minimum, maximum) {
+        const number = Number(value);
+        return Math.min(maximum, Math.max(minimum, Number.isFinite(number) ? number : minimum));
+      }
+
+      function layoutMinimumObjectWidth(stageWidth) {
+        return Math.min(260, Math.max(220, Number(stageWidth || 0) - 24));
+      }
+
+      function normaliseLayoutTable(rows, maximumRows = 80, maximumColumns = 12) {
+        const source = Array.isArray(rows) ? rows.slice(0, maximumRows) : [];
+        if (!source.length) return [["项目", "数值", "备注"], ["示例 A", 0, "待填写"], ["示例 B", 0, "待填写"], ["示例 C", 0, "待填写"]];
+        const width = layoutClamp(source.reduce((count, row) => Math.max(count, Array.isArray(row) ? row.length : 1), 1), 1, maximumColumns);
+        const result = source.map(row => {
+          const cells = (Array.isArray(row) ? row : [row]).slice(0, width).map(value => {
+            if (typeof value === "number" && Number.isFinite(value)) return value;
+            return String(value ?? "").slice(0, 240);
+          });
+          while (cells.length < width) cells.push("");
+          return cells;
+        });
+        if (!result[0].some(value => String(value).trim())) {
+          result[0] = Array.from({ length: width }, (_, index) => `字段 ${index + 1}`);
+        }
+        return result;
+      }
+
+      function defaultLayoutTable(index = 1) {
+        return [
+          ["账户", "账面余额", "校验差异"],
+          [`ACC-${String(index).padStart(2, "0")}01`, 1280, 0],
+          [`ACC-${String(index).padStart(2, "0")}02`, 965, 12],
+          [`ACC-${String(index).padStart(2, "0")}03`, 1540, 0]
+        ];
+      }
+
+      function uniqueLayoutObjectId(value, index = 1) {
+        let base = String(value || `layout-data-${Date.now()}-${index}`)
+          .trim().replace(/[^A-Za-z0-9_-]+/gu, "-").replace(/^-+|-+$/gu, "");
+        if (!base) base = `layout-data-${Date.now()}-${index}`;
+        if (!/^[A-Za-z_]/u.test(base)) base = `layout-data-${base}`;
+        let candidate = base;
+        let suffix = 2;
+        while (document.getElementById(candidate) || layoutObjects.some(item => item.id === candidate)) {
+          candidate = `${base}-${suffix++}`;
+        }
+        return candidate;
+      }
+
+      function normaliseLayoutObject(raw, index, currentStageWidth) {
+        const stageWidth = Math.max(240, Number(currentStageWidth) || 1100);
+        const storedStageWidth = Math.max(240, Number(raw?.stageWidth) || stageWidth);
+        const ratio = stageWidth / storedStageWidth;
+        const maximumWidth = Math.max(220, stageWidth - 24);
+        const minimumWidth = layoutMinimumObjectWidth(stageWidth);
+        const width = layoutClamp((Number(raw?.width) || 420) * ratio, minimumWidth, maximumWidth);
+        const height = layoutClamp(Number(raw?.height) || 320, 220, 560);
+        const x = layoutClamp((Number(raw?.x) || Math.max(12, stageWidth - width - 32)) * ratio, 12, Math.max(12, stageWidth - width - 12));
+        const y = layoutClamp(Number(raw?.y) || 92 + index * 24, 12, 2400);
+        const viewMode = raw?.viewMode === "table" ? "table" : "chart";
+        const chartType = layoutChartTypes.has(raw?.chartType) ? raw.chartType : "column";
+        return {
+          id: uniqueLayoutObjectId(raw?.id, index + 1),
+          title: String(raw?.title || `合成数据表 ${index + 1}`).slice(0, 80),
+          stageWidth,
+          x, y, width, height,
+          wrapMargin: layoutClamp(raw?.wrapMargin ?? 22, 8, 60),
+          zIndex: Math.round(layoutClamp(raw?.zIndex ?? 10 + index, 1, 999)),
+          viewMode,
+          chartType,
+          tableData: normaliseLayoutTable(raw?.tableData),
+          element: null,
+          contentElement: null,
+          typeSelect: null,
+          chartButton: null,
+          tableButton: null
+        };
+      }
+
+      function captureDynamicLayoutState() {
+        const stageWidth = Math.max(240, Math.round(layoutStage?.clientWidth || layoutStageWidth || 1100));
+        return {
+          schema: "hyperunit-dynamic-layout/1",
+          revision: 1,
+          objects: layoutObjects.map(object => ({
+            id: object.id,
+            title: object.title,
+            stageWidth,
+            x: Math.round(object.x * 100) / 100,
+            y: Math.round(object.y * 100) / 100,
+            width: Math.round(object.width * 100) / 100,
+            height: Math.round(object.height * 100) / 100,
+            wrapMargin: object.wrapMargin,
+            zIndex: object.zIndex,
+            viewMode: object.viewMode,
+            chartType: object.chartType,
+            tableData: normaliseLayoutTable(object.tableData)
+          }))
+        };
+      }
+
+      function initialiseDynamicLayout(state) {
+        applyDynamicLayoutState(state, false);
+      }
+
+      function applyDynamicLayoutState(state, refreshConnections = true) {
+        if (!layoutStage || !layoutObjectLayer || !layoutTextLayer || !layoutSource) return;
+        if (layoutInteraction) finishLayoutInteraction(null, true);
+        layoutObjectLayer.replaceChildren();
+        layoutObjects = [];
+        const currentWidth = Math.max(240, Math.round(layoutStage.clientWidth || state?.stageWidth || 1100));
+        layoutStageWidth = currentWidth;
+        const rawObjects = Array.isArray(state?.objects) ? state.objects.slice(0, 12) : [];
+        rawObjects.forEach((raw, index) => {
+          const object = normaliseLayoutObject(raw, index, currentWidth);
+          layoutObjects.push(object);
+          createLayoutObjectElement(object);
+        });
+        layoutTopZ = Math.max(10, ...layoutObjects.map(object => object.zIndex));
+        rebuildDynamicText();
+        if (refreshConnections) refreshConnectableElements();
+        scheduleConnectorDraw();
+      }
+
+      function renderLayoutObjectTransform(object) {
+        if (!object.element) return;
+        object.element.style.width = `${object.width}px`;
+        object.element.style.height = `${object.height}px`;
+        object.element.style.zIndex = String(object.zIndex);
+        object.element.style.transform = `translate3d(${object.x}px, ${object.y}px, 0)`;
+      }
+
+      function createLayoutObjectElement(object) {
+        const element = document.createElement("section");
+        element.id = object.id;
+        element.className = "layout-data-object";
+        element.dataset.connectable = "true";
+        element.dataset.connectId = object.id;
+        element.tabIndex = 0;
+        element.setAttribute("role", "group");
+        element.setAttribute("aria-label", `${object.title}，可切换表格与图表`);
+
+        const bar = document.createElement("div");
+        bar.className = "layout-object-bar";
+        bar.setAttribute("role", "button");
+        bar.setAttribute("aria-describedby", "layout-help");
+        const title = document.createElement("span");
+        title.className = "layout-object-title";
+        title.textContent = object.title;
+
+        const typeSelect = document.createElement("select");
+        typeSelect.className = "layout-chart-type";
+        typeSelect.setAttribute("aria-label", "图表类型");
+        [
+          ["column", "柱状"], ["line", "折线"], ["area", "面积"],
+          ["bar", "条形"], ["pie", "饼图"], ["doughnut", "环图"]
+        ].forEach(([value, label]) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          typeSelect.appendChild(option);
+        });
+        typeSelect.value = object.chartType;
+
+        const toggle = document.createElement("span");
+        toggle.className = "layout-view-toggle";
+        const chartButton = document.createElement("button");
+        chartButton.className = "layout-view-button";
+        chartButton.type = "button";
+        chartButton.textContent = "图";
+        chartButton.setAttribute("aria-label", "切换到图表视图");
+        const tableButton = document.createElement("button");
+        tableButton.className = "layout-view-button";
+        tableButton.type = "button";
+        tableButton.textContent = "表";
+        tableButton.setAttribute("aria-label", "切换到表格视图");
+        toggle.append(chartButton, tableButton);
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "layout-object-remove";
+        removeButton.type = "button";
+        removeButton.textContent = "×";
+        removeButton.setAttribute("aria-label", `删除${object.title}`);
+
+        const content = document.createElement("div");
+        content.className = "layout-object-content";
+        const resizeHandle = document.createElement("button");
+        resizeHandle.className = "layout-resize-handle";
+        resizeHandle.type = "button";
+        resizeHandle.setAttribute("aria-label", `调整${object.title}大小`);
+
+        bar.append(title, typeSelect, toggle, removeButton);
+        element.append(bar, content, resizeHandle);
+        layoutObjectLayer.appendChild(element);
+        object.element = element;
+        object.contentElement = content;
+        object.typeSelect = typeSelect;
+        object.chartButton = chartButton;
+        object.tableButton = tableButton;
+        renderLayoutObjectTransform(object);
+        renderLayoutObjectView(object);
+        updateLayoutObjectAffordances();
+
+        bar.addEventListener("pointerdown", event => beginLayoutInteraction(event, object, "move"));
+        resizeHandle.addEventListener("pointerdown", event => beginLayoutInteraction(event, object, "resize"));
+        bar.addEventListener("lostpointercapture", finishLayoutInteraction);
+        resizeHandle.addEventListener("lostpointercapture", finishLayoutInteraction);
+        resizeHandle.addEventListener("keydown", event => {
+          if (!canResizeLayoutObjects() || !event.key.startsWith("Arrow")) return;
+          const step = event.shiftKey ? 48 : 16;
+          const stageWidth = Math.max(240, layoutStage.clientWidth || layoutStageWidth || 1100);
+          if (event.key === "ArrowLeft") object.width -= step;
+          if (event.key === "ArrowRight") object.width += step;
+          if (event.key === "ArrowUp") object.height -= step;
+          if (event.key === "ArrowDown") object.height += step;
+          object.width = layoutClamp(object.width, layoutMinimumObjectWidth(stageWidth), Math.max(layoutMinimumObjectWidth(stageWidth), stageWidth - object.x - 12));
+          object.height = layoutClamp(object.height, 220, 560);
+          event.preventDefault();
+          renderLayoutObjectTransform(object);
+          renderLayoutObjectView(object);
+          scheduleDynamicLayout();
+          scheduleConnectorDraw();
+          if (layoutStatus) layoutStatus.textContent = "已通过键盘调整对象尺寸，文字与关系连线已同步重排。";
+          queueLayoutKeyboardHistory("键盘调整数据对象大小");
+        });
+        typeSelect.addEventListener("pointerdown", event => event.stopPropagation());
+        typeSelect.addEventListener("change", () => {
+          if (!editorEnabled || !layoutChartTypes.has(typeSelect.value)) return;
+          finishActiveLayoutCell(false);
+          object.chartType = typeSelect.value;
+          object.viewMode = "chart";
+          renderLayoutObjectView(object);
+          commitHistory("切换图表类型");
+          announce(["pie", "doughnut"].includes(object.chartType)
+            ? `“${object.title}”已切换图表类型；饼图／环图仅绘制第一数值列。`
+            : `“${object.title}”已切换图表类型。`);
+        });
+        chartButton.addEventListener("click", event => {
+          event.stopPropagation();
+          setLayoutObjectView(object, "chart");
+        });
+        tableButton.addEventListener("click", event => {
+          event.stopPropagation();
+          setLayoutObjectView(object, "table");
+        });
+        removeButton.addEventListener("click", event => {
+          event.stopPropagation();
+          deleteLayoutObject(object);
+        });
+        element.addEventListener("keydown", event => handleLayoutObjectKeydown(event, object));
+      }
+
+      function setLayoutObjectView(object, mode) {
+        if (!object || !["chart", "table"].includes(mode) || object.viewMode === mode) return;
+        if (activeLayoutCellEdit?.object === object) finishActiveLayoutCell(false);
+        object.viewMode = mode;
+        renderLayoutObjectView(object);
+        scheduleConnectorDraw();
+        if (editorEnabled) commitHistory(mode === "chart" ? "切换到图表" : "切换到表格");
+        if (layoutStatus) layoutStatus.textContent = mode === "chart"
+          ? "图表已按当前表格数据在本地重绘。"
+          : "表格与图表共用同一份数据；开启编辑后可双击单元格修改。";
+      }
+
+      function renderLayoutObjectView(object) {
+        if (!object.contentElement) return;
+        object.chartButton?.classList.toggle("is-active", object.viewMode === "chart");
+        object.tableButton?.classList.toggle("is-active", object.viewMode === "table");
+        object.chartButton?.setAttribute("aria-pressed", String(object.viewMode === "chart"));
+        object.tableButton?.setAttribute("aria-pressed", String(object.viewMode === "table"));
+        if (object.typeSelect) {
+          object.typeSelect.value = object.chartType;
+          object.typeSelect.disabled = !editorEnabled;
+        }
+        object.contentElement.replaceChildren();
+        if (object.viewMode === "table") renderLayoutTableView(object);
+        else renderLayoutChartView(object);
+      }
+
+      function renderLayoutTableView(object) {
+        const wrap = document.createElement("div");
+        wrap.className = "layout-table-wrap";
+        const table = document.createElement("table");
+        table.className = "layout-data-table";
+        table.setAttribute("aria-label", object.title);
+        object.tableData.forEach((row, rowIndex) => {
+          const tableRow = document.createElement("tr");
+          row.forEach((value, columnIndex) => {
+            const cell = document.createElement(rowIndex === 0 ? "th" : "td");
+            cell.textContent = String(value ?? "");
+            cell.dataset.row = String(rowIndex);
+            cell.dataset.column = String(columnIndex);
+            cell.tabIndex = 0;
+            cell.addEventListener("dblclick", () => beginLayoutCellEdit(cell, object, rowIndex, columnIndex));
+            cell.addEventListener("keydown", event => {
+              if ((event.key === "Enter" || event.key === "F2") && cell.getAttribute("contenteditable") !== "true") {
+                event.preventDefault();
+                beginLayoutCellEdit(cell, object, rowIndex, columnIndex);
+              }
+            });
+            tableRow.appendChild(cell);
+          });
+          table.appendChild(tableRow);
+        });
+        wrap.appendChild(table);
+        object.contentElement.appendChild(wrap);
+      }
+
+      function layoutCellValue(text, rowIndex, columnIndex) {
+        const trimmed = String(text ?? "").replace(/\s+/gu, " ").trim().slice(0, 240);
+        if (rowIndex > 0 && columnIndex > 0 && /^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(trimmed)) {
+          const number = Number(trimmed);
+          if (Number.isFinite(number)) return number;
+        }
+        return trimmed;
+      }
+
+      function beginLayoutCellEdit(cell, object, rowIndex, columnIndex) {
+        if (!editorEnabled || cell.getAttribute("contenteditable") === "true") return;
+        if (activeLayoutCellEdit && activeLayoutCellEdit.cell !== cell) finishActiveLayoutCell(false);
+        const originalValue = object.tableData[rowIndex]?.[columnIndex] ?? "";
+        const original = String(originalValue);
+        let finished = false;
+        let composing = false;
+        let pendingBlur = false;
+        cell.setAttribute("contenteditable", "true");
+        cell.setAttribute("spellcheck", "false");
+        cell.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+
+        const finish = cancelled => {
+          if (finished) return;
+          finished = true;
+          if (activeLayoutCellEdit?.cell === cell) activeLayoutCellEdit = null;
+          const nextValue = cancelled ? originalValue : layoutCellValue(cell.textContent, rowIndex, columnIndex);
+          object.tableData[rowIndex][columnIndex] = nextValue;
+          cell.removeAttribute("contenteditable");
+          if (cancelled || String(nextValue) === original) {
+            cell.textContent = original;
+            return;
+          }
+          renderLayoutObjectView(object);
+          scheduleDynamicLayout();
+          scheduleConnectorDraw();
+          commitHistory("编辑表格单元格");
+          announce(`已更新“${object.title}”的数据；图表将使用同一份最新数据。`);
+        };
+        activeLayoutCellEdit = { cell, object, finish };
+        cell.addEventListener("input", () => {
+          object.tableData[rowIndex][columnIndex] = layoutCellValue(cell.textContent, rowIndex, columnIndex);
+        });
+        cell.addEventListener("compositionstart", () => { composing = true; });
+        cell.addEventListener("compositionend", () => {
+          composing = false;
+          object.tableData[rowIndex][columnIndex] = layoutCellValue(cell.textContent, rowIndex, columnIndex);
+          if (pendingBlur) finish(false);
+        });
+        cell.addEventListener("keydown", event => {
+          if (composing || event.isComposing || event.keyCode === 229) return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            finish(true);
+          } else if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            finish(false);
+          }
+        });
+        cell.addEventListener("paste", event => {
+          event.preventDefault();
+          const text = event.clipboardData?.getData("text/plain") || "";
+          if (document.execCommand("insertText", false, text)) return;
+          const activeSelection = window.getSelection();
+          if (!activeSelection?.rangeCount) return;
+          const activeRange = activeSelection.getRangeAt(0);
+          activeRange.deleteContents();
+          const textNode = document.createTextNode(text);
+          activeRange.insertNode(textNode);
+          activeRange.setStartAfter(textNode);
+          activeRange.collapse(true);
+          activeSelection.removeAllRanges();
+          activeSelection.addRange(activeRange);
+        });
+        cell.addEventListener("blur", () => {
+          if (composing) {
+            pendingBlur = true;
+            return;
+          }
+          finish(false);
+        }, { once: true });
+      }
+
+      function finishActiveLayoutCell(cancelled = false) {
+        const active = activeLayoutCellEdit;
+        if (!active) return;
+        active.finish(cancelled);
+      }
+
+      function parseLayoutNumber(value) {
+        if (typeof value === "number") return Number.isFinite(value) ? value : null;
+        const cleaned = String(value ?? "").trim().replace(/,/gu, "").replace(/%$/u, "");
+        if (!cleaned || !/^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/u.test(cleaned)) return null;
+        const number = Number(cleaned);
+        return Number.isFinite(number) ? number : null;
+      }
+
+      function layoutChartData(tableData) {
+        const rows = normaliseLayoutTable(tableData);
+        if (rows.length < 2 || rows[0].length < 2) return { categories: [], series: [] };
+        const categories = rows.slice(1).map((row, index) => String(row[0] || `项目 ${index + 1}`).slice(0, 18));
+        const series = [];
+        for (let column = 1; column < rows[0].length; column += 1) {
+          const values = rows.slice(1).map(row => parseLayoutNumber(row[column]));
+          if (!values.some(value => value !== null)) continue;
+          series.push({ name: String(rows[0][column] || `系列 ${column}`).slice(0, 20), values });
+        }
+        return { categories, series };
+      }
+
+      function renderLayoutChartView(object) {
+        const canvas = document.createElement("canvas");
+        canvas.className = "layout-chart-canvas";
+        canvas.setAttribute("role", "img");
+        const chartData = layoutChartData(object.tableData);
+        const firstSeriesOnly = ["pie", "doughnut"].includes(object.chartType) && chartData.series.length > 1;
+        const summary = chartData.series.length
+          ? `${object.title}，${chartData.categories.length} 个分类，${chartData.series.length} 个数值系列。`
+          : `${object.title}：当前表格没有可绘制的数值列，可切回表格编辑。`;
+        const semanticSummary = firstSeriesOnly ? `${summary} 当前饼图／环图仅使用第一数值列“${chartData.series[0].name}”。` : summary;
+        canvas.setAttribute("aria-label", semanticSummary);
+        const accessible = document.createElement("p");
+        accessible.className = "sr-only";
+        accessible.textContent = semanticSummary;
+        object.contentElement.append(canvas, accessible);
+        requestAnimationFrame(() => drawLayoutChart(canvas, object, chartData));
+      }
+
+      function drawLayoutChart(canvas, object, data = layoutChartData(object.tableData)) {
+        if (!canvas.isConnected) return;
+        const width = Math.max(220, Math.round(canvas.clientWidth || object.width));
+        const height = Math.max(150, Math.round(canvas.clientHeight || object.height - 42));
+        const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+        canvas.width = Math.round(width * pixelRatio);
+        canvas.height = Math.round(height * pixelRatio);
+        const context = canvas.getContext("2d");
+        if (!context) return;
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        context.clearRect(0, 0, width, height);
+        context.fillStyle = "#fffdf9";
+        context.fillRect(0, 0, width, height);
+        context.fillStyle = "#233032";
+        context.font = "700 13px system-ui, sans-serif";
+        context.fillText(object.title.slice(0, 34), 18, 24);
+        if (!data.series.length || !data.categories.length) {
+          context.fillStyle = "#687377";
+          context.font = "13px system-ui, sans-serif";
+          context.textAlign = "center";
+          context.fillText("没有可绘制的数值列", width / 2, height / 2 - 4);
+          context.font = "11px system-ui, sans-serif";
+          context.fillText("切换到“表”并输入数值", width / 2, height / 2 + 18);
+          context.textAlign = "left";
+          return;
+        }
+        const palette = ["#2a6f6b", "#b77a25", "#486a59", "#9a5141", "#687377"];
+        const chartType = layoutChartTypes.has(object.chartType) ? object.chartType : "column";
+        if (chartType === "pie" || chartType === "doughnut") {
+          if (data.series.length > 1) {
+            context.fillStyle = "#687377";
+            context.font = "10px system-ui, sans-serif";
+            context.fillText(`占比口径：${data.series[0].name.slice(0, 18)}（仅第一数值列）`, 18, 41);
+          }
+          const values = data.series[0].values.map(value => Math.max(0, value || 0));
+          const total = values.reduce((sum, value) => sum + value, 0);
+          if (!total) {
+            context.fillStyle = "#687377";
+            context.font = "13px system-ui, sans-serif";
+            context.textAlign = "center";
+            context.fillText("数值合计为 0，无法绘制占比", width / 2, height / 2);
+            context.textAlign = "left";
+            return;
+          }
+          const radius = Math.max(35, Math.min(width * .25, (height - 72) * .42));
+          const centerX = Math.min(width * .38, radius + 24);
+          const centerY = 42 + (height - 54) / 2;
+          let angle = -Math.PI / 2;
+          values.forEach((value, index) => {
+            const next = angle + value / total * Math.PI * 2;
+            context.beginPath();
+            context.moveTo(centerX, centerY);
+            context.arc(centerX, centerY, radius, angle, next);
+            context.closePath();
+            context.fillStyle = palette[index % palette.length];
+            context.fill();
+            angle = next;
+          });
+          if (chartType === "doughnut") {
+            context.beginPath();
+            context.arc(centerX, centerY, radius * .5, 0, Math.PI * 2);
+            context.fillStyle = "#fffdf9";
+            context.fill();
+          }
+          context.font = "11px system-ui, sans-serif";
+          data.categories.slice(0, 7).forEach((label, index) => {
+            const y = 50 + index * 22;
+            context.fillStyle = palette[index % palette.length];
+            context.fillRect(Math.max(width * .58, centerX + radius + 14), y - 9, 10, 10);
+            context.fillStyle = "#435154";
+            context.fillText(`${label.slice(0, 10)} ${Math.round(values[index] / total * 100)}%`, Math.max(width * .58, centerX + radius + 30), y);
+          });
+          return;
+        }
+
+        const left = chartType === "bar" ? 76 : 42;
+        const right = 18;
+        const top = 48;
+        const bottom = chartType === "bar" ? 54 : 38;
+        const plotWidth = Math.max(80, width - left - right);
+        const plotHeight = Math.max(70, height - top - bottom);
+        const allValues = data.series.flatMap(series => series.values.filter(value => value !== null));
+        const minimum = Math.min(0, ...allValues);
+        const maximum = Math.max(0, ...allValues);
+        const span = maximum - minimum || 1;
+        const yFor = value => top + (maximum - value) / span * plotHeight;
+        context.strokeStyle = "rgba(77,91,97,.18)";
+        context.fillStyle = "#687377";
+        context.lineWidth = 1;
+        context.font = "10px system-ui, sans-serif";
+        if (chartType === "bar") {
+          context.textAlign = "center";
+          for (let step = 0; step <= 4; step += 1) {
+            const x = left + plotWidth * step / 4;
+            context.beginPath();
+            context.moveTo(x, top);
+            context.lineTo(x, top + plotHeight);
+            context.stroke();
+            const value = minimum + span * step / 4;
+            context.fillText(Number.isInteger(value) ? String(value) : value.toFixed(1), x, top + plotHeight + 16);
+          }
+          context.textAlign = "left";
+        } else {
+          context.textAlign = "right";
+          for (let step = 0; step <= 4; step += 1) {
+            const y = top + plotHeight * step / 4;
+            context.beginPath();
+            context.moveTo(left, y);
+            context.lineTo(left + plotWidth, y);
+            context.stroke();
+            const value = maximum - span * step / 4;
+            context.fillText(Number.isInteger(value) ? String(value) : value.toFixed(1), left - 6, y + 3);
+          }
+          context.textAlign = "left";
+        }
+
+        if (chartType === "bar") {
+          const categoryHeight = plotHeight / Math.max(1, data.categories.length);
+          const seriesHeight = Math.max(3, categoryHeight * .68 / data.series.length);
+          data.categories.forEach((label, categoryIndex) => {
+            context.fillStyle = "#687377";
+            context.textAlign = "right";
+            context.fillText(label.slice(0, 9), left - 7, top + categoryHeight * (categoryIndex + .58));
+            data.series.forEach((series, seriesIndex) => {
+              const value = series.values[categoryIndex] || 0;
+              const xZero = left + (0 - minimum) / span * plotWidth;
+              const xValue = left + (value - minimum) / span * plotWidth;
+              context.fillStyle = palette[seriesIndex % palette.length];
+              context.fillRect(Math.min(xZero, xValue), top + categoryHeight * categoryIndex + seriesIndex * seriesHeight + 4, Math.max(1, Math.abs(xValue - xZero)), seriesHeight - 1);
+            });
+          });
+          context.textAlign = "left";
+        } else if (chartType === "column") {
+          const categoryWidth = plotWidth / Math.max(1, data.categories.length);
+          const groupWidth = Math.min(categoryWidth * .72, 54);
+          const columnWidth = Math.max(3, groupWidth / data.series.length);
+          data.categories.forEach((label, categoryIndex) => {
+            data.series.forEach((series, seriesIndex) => {
+              const value = series.values[categoryIndex] || 0;
+              const zeroY = yFor(0);
+              const valueY = yFor(value);
+              const x = left + categoryWidth * categoryIndex + (categoryWidth - groupWidth) / 2 + seriesIndex * columnWidth;
+              context.fillStyle = palette[seriesIndex % palette.length];
+              context.fillRect(x, Math.min(zeroY, valueY), Math.max(2, columnWidth - 2), Math.max(1, Math.abs(valueY - zeroY)));
+            });
+            context.fillStyle = "#687377";
+            context.font = "9px system-ui, sans-serif";
+            context.textAlign = "center";
+            context.fillText(label.slice(0, 8), left + categoryWidth * (categoryIndex + .5), top + plotHeight + 17);
+          });
+          context.textAlign = "left";
+        } else {
+          const stepX = data.categories.length > 1 ? plotWidth / (data.categories.length - 1) : 0;
+          data.series.forEach((series, seriesIndex) => {
+            const points = series.values.map((value, index) => value === null ? null : ({ x: left + stepX * index, y: yFor(value) }));
+            if (chartType === "area") {
+              const valid = points.filter(Boolean);
+              if (valid.length) {
+                context.beginPath();
+                context.moveTo(valid[0].x, yFor(0));
+                valid.forEach(point => context.lineTo(point.x, point.y));
+                context.lineTo(valid[valid.length - 1].x, yFor(0));
+                context.closePath();
+                context.globalAlpha = .16;
+                context.fillStyle = palette[seriesIndex % palette.length];
+                context.fill();
+                context.globalAlpha = 1;
+              }
+            }
+            context.beginPath();
+            let started = false;
+            points.forEach(point => {
+              if (!point) { started = false; return; }
+              if (!started) { context.moveTo(point.x, point.y); started = true; }
+              else context.lineTo(point.x, point.y);
+            });
+            context.strokeStyle = palette[seriesIndex % palette.length];
+            context.lineWidth = 2;
+            context.stroke();
+            points.filter(Boolean).forEach(point => {
+              context.beginPath();
+              context.arc(point.x, point.y, 2.6, 0, Math.PI * 2);
+              context.fillStyle = palette[seriesIndex % palette.length];
+              context.fill();
+            });
+          });
+          data.categories.forEach((label, index) => {
+            context.fillStyle = "#687377";
+            context.font = "9px system-ui, sans-serif";
+            context.textAlign = "center";
+            context.fillText(label.slice(0, 8), left + stepX * index, top + plotHeight + 17);
+          });
+          context.textAlign = "left";
+        }
+        context.font = "10px system-ui, sans-serif";
+        data.series.slice(0, 4).forEach((series, index) => {
+          const x = left + index * Math.max(76, Math.min(118, plotWidth / Math.max(1, data.series.length)));
+          context.fillStyle = palette[index % palette.length];
+          context.fillRect(x, height - 14, 9, 9);
+          context.fillStyle = "#435154";
+          context.fillText(series.name.slice(0, 12), x + 13, height - 6);
+        });
+      }
+
+      function layoutTextStyle(node, blockTag) {
+        const computed = node?.nodeType === Node.ELEMENT_NODE ? getComputedStyle(node) : getComputedStyle(node?.parentElement || layoutSource);
+        const heading = /^H[1-6]$/u.test(blockTag);
+        const size = layoutClamp(parseFloat(computed.fontSize) || (heading ? 25 : 15), 10, 42);
+        const lineHeightValue = parseFloat(computed.lineHeight);
+        return {
+          fontSize: size,
+          lineHeight: layoutClamp(Number.isFinite(lineHeightValue) ? lineHeightValue : size * 1.66, size * 1.15, size * 2.2),
+          fontFamily: computed.fontFamily || "system-ui, sans-serif",
+          fontWeight: computed.fontWeight || (heading ? "800" : "400"),
+          fontStyle: computed.fontStyle || "normal",
+          textDecoration: computed.textDecorationLine || "none"
+        };
+      }
+
+      function rebuildDynamicText() {
+        if (!layoutTextLayer || !layoutSource) return;
+        layoutTextLayer.replaceChildren();
+        layoutBlocks = [];
+        layoutTokens = [];
+        if (layoutSemanticDocument) layoutSemanticDocument.innerHTML = sanitiseHtml(layoutSource.innerHTML);
+        const measureCanvas = rebuildDynamicText.measureCanvas || (rebuildDynamicText.measureCanvas = document.createElement("canvas"));
+        const measureContext = measureCanvas.getContext("2d");
+        const blocks = Array.from(layoutSource.children).filter(element => !element.matches("script,style,button,select,table"));
+        blocks.forEach((sourceElement, blockIndex) => {
+          const tag = sourceElement.tagName || "P";
+          const block = {
+            tag, blockIndex, sourceElement, tokens: [], startY: 0, endY: 0,
+            marginTop: /^H[1-6]$/u.test(tag) ? 10 : 0,
+            marginBottom: /^H[1-6]$/u.test(tag) ? 18 : 12
+          };
+          const walker = document.createTreeWalker(sourceElement, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+            acceptNode(node) {
+              if (node.nodeType === Node.TEXT_NODE) return node.nodeValue ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+              if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "BR") return NodeFilter.FILTER_ACCEPT;
+              return NodeFilter.FILTER_SKIP;
+            }
+          });
+          const flowNodes = [];
+          while (walker.nextNode()) flowNodes.push(walker.currentNode);
+          flowNodes.forEach(flowNode => {
+            const isBreak = flowNode.nodeType === Node.ELEMENT_NODE && flowNode.tagName === "BR";
+            const style = layoutTextStyle(flowNode.parentElement, tag);
+            measureContext.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
+            const segments = isBreak ? [""] : segmentText(flowNode.nodeValue);
+            segments.forEach(segment => {
+              const isSpace = /^\s+$/u.test(segment);
+              const span = document.createElement("span");
+              span.className = `layout-flow-token${isSpace ? " is-space" : ""}${isBreak ? " is-break" : ""}`;
+              span.textContent = isBreak ? "↵" : (isSpace ? " " : segment);
+              span.dataset.blockIndex = String(blockIndex);
+              span.setAttribute("aria-hidden", "true");
+              if (!isSpace && !isBreak) span.title = "双击或按 Enter／F2 快速编辑当前段落";
+              span.style.fontFamily = style.fontFamily;
+              span.style.fontSize = `${style.fontSize}px`;
+              span.style.fontWeight = style.fontWeight;
+              span.style.fontStyle = style.fontStyle;
+              span.style.textDecoration = style.textDecoration;
+              const token = {
+                element: span,
+                blockIndex,
+                isSpace,
+                isBreak,
+                width: isBreak ? 0 : Math.max(isSpace ? style.fontSize * .34 : 1, measureContext.measureText(isSpace ? " " : segment).width),
+                lineHeight: style.lineHeight
+              };
+              block.tokens.push(token);
+              layoutTokens.push(token);
+              layoutTextLayer.appendChild(span);
+            });
+          });
+          const quickTrigger = block.tokens.find(token => !token.isSpace && !token.isBreak)?.element;
+          if (quickTrigger) {
+            quickTrigger.dataset.quickEditTrigger = "true";
+            quickTrigger.setAttribute("role", "button");
+            quickTrigger.removeAttribute("aria-hidden");
+            const context = String(sourceElement.textContent || "").trim().replace(/\s+/gu, " ").slice(0, 90);
+            quickTrigger.setAttribute("aria-label", `快速编辑动态画布第 ${blockIndex + 1} 段：${context}。双击或按 Enter／F2`);
+          }
+          layoutBlocks.push(block);
+        });
+        updateQuickEditAffordances();
+        scheduleDynamicLayout();
+      }
+
+      function subtractLayoutInterval(slots, blockedLeft, blockedRight) {
+        const result = [];
+        slots.forEach(slot => {
+          if (blockedRight <= slot.left || blockedLeft >= slot.right) {
+            result.push(slot);
+            return;
+          }
+          if (blockedLeft > slot.left) result.push({ left: slot.left, right: Math.min(blockedLeft, slot.right) });
+          if (blockedRight < slot.right) result.push({ left: Math.max(blockedRight, slot.left), right: slot.right });
+        });
+        return result;
+      }
+
+      function availableLayoutSlots(y, lineHeight) {
+        const stageWidth = Math.max(240, layoutStage.clientWidth || layoutStageWidth || 1100);
+        let slots = [{ left: 26, right: stageWidth - 26 }];
+        layoutObjects
+          .filter(object => y < object.y + object.height + object.wrapMargin && y + lineHeight > object.y - object.wrapMargin)
+          .sort((a, b) => a.x - b.x)
+          .forEach(object => {
+            slots = subtractLayoutInterval(slots, object.x - object.wrapMargin, object.x + object.width + object.wrapMargin);
+          });
+        return slots.filter(slot => slot.right - slot.left >= 34);
+      }
+
+      function computeDynamicTextLayout() {
+        layoutFrame = 0;
+        if (!layoutStage || !layoutTextLayer) return;
+        let y = 28;
+        layoutBlocks.forEach(block => {
+          y += block.marginTop;
+          block.startY = y;
+          let slotIndex = -1;
+          let slots = [];
+          let x = 0;
+          let currentLineHeight = block.tokens.reduce((height, token) => Math.max(height, token.lineHeight), /^H[1-6]$/u.test(block.tag) ? 34 : 25);
+          const startLine = () => {
+            let guard = 0;
+            while (guard++ < 160) {
+              slots = availableLayoutSlots(y, currentLineHeight);
+              if (slots.length) {
+                slotIndex = 0;
+                x = slots[0].left;
+                return;
+              }
+              y += currentLineHeight;
+            }
+            slots = [{ left: 26, right: Math.max(60, (layoutStage.clientWidth || 340) - 26) }];
+            slotIndex = 0;
+            x = slots[0].left;
+          };
+          startLine();
+          block.tokens.forEach(token => {
+            if (token.isBreak) {
+              token.element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+              y += currentLineHeight;
+              startLine();
+              return;
+            }
+            let attempts = 0;
+            while (attempts++ < 240) {
+              const slot = slots[slotIndex];
+              if (token.isSpace && x <= slot.left + 1) break;
+              if (x + token.width <= slot.right + .25) break;
+              slotIndex += 1;
+              if (slotIndex < slots.length) {
+                x = slots[slotIndex].left;
+                continue;
+              }
+              y += currentLineHeight;
+              startLine();
+            }
+            const slot = slots[slotIndex];
+            if (token.isSpace && x <= slot.left + 1) {
+              token.element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+              return;
+            }
+            token.element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            x += Math.min(token.width, Math.max(1, slot.right - x));
+          });
+          block.endY = y + currentLineHeight;
+          y = block.endY + block.marginBottom;
+        });
+        const objectBottom = layoutObjects.reduce((bottom, object) => Math.max(bottom, object.y + object.height + object.wrapMargin), 0);
+        const stageHeight = Math.max(688, Math.ceil(y + 42), Math.ceil(objectBottom + 28));
+        layoutStage.style.height = `${stageHeight}px`;
+        scheduleConnectorDraw();
+      }
+
+      function scheduleDynamicLayout() {
+        if (!layoutStage || layoutFrame) return;
+        layoutFrame = requestAnimationFrame(computeDynamicTextLayout);
+      }
+
+      function insertLayoutPlainTextAtSelection(text, root) {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        if (!root.contains(range.commonAncestorContainer)) return;
+        range.deleteContents();
+        const fragment = document.createDocumentFragment();
+        const parts = String(text ?? "").replace(/\r/gu, "").split("\n");
+        let lastNode = null;
+        parts.forEach((part, index) => {
+          if (index) {
+            lastNode = document.createElement("br");
+            fragment.appendChild(lastNode);
+          }
+          if (part) {
+            lastNode = document.createTextNode(part);
+            fragment.appendChild(lastNode);
+          }
+        });
+        if (!lastNode) {
+          lastNode = document.createElement("br");
+          fragment.appendChild(lastNode);
+        }
+        range.insertNode(fragment);
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      function finishQuickTextEdit(commit) {
+        const state = activeQuickEditor;
+        if (!state || state.finished) return;
+        state.finished = true;
+        activeQuickEditor = null;
+        layoutTextLayer.classList.remove("is-quick-editing");
+        const nextHtml = commit ? sanitiseQuickTextHtml(state.editor.innerHTML.trim() || "<br>") : state.originalHtml;
+        const changed = commit && nextHtml !== state.originalHtml;
+        if (!changed) state.block.tokens.forEach(token => token.element.classList.remove("is-quick-edit-hidden"));
+        state.shell.remove();
+        if (!changed) {
+          if (!commit && layoutStatus) layoutStatus.textContent = "已取消快速编辑；原段落保持不变。";
+          updateQuickEditAffordances();
+          return;
+        }
+        state.sourceElement.innerHTML = nextHtml;
+        rebuildDynamicText();
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+        commitHistory("排版演示快速编辑文字");
+        if (layoutStatus) layoutStatus.textContent = "段落已更新；文字避让、语义副本与关系连线已重新计算。";
+        announce("已在本地排版演示层更新当前段落；页面已标记为非官方、非权威本地修改。", true);
+      }
+
+      function beginQuickTextEdit(blockIndex) {
+        if (!isLayoutDemoActive() || connectionMode || layoutInteraction || activeLayoutCellEdit) return;
+        const block = layoutBlocks[blockIndex];
+        if (!block?.sourceElement || !block.tokens.length) return;
+        if (activeQuickEditor) finishQuickTextEdit(true);
+        const shell = document.createElement("div");
+        shell.className = "quick-edit-shell";
+        shell.setAttribute("role", "dialog");
+        shell.setAttribute("aria-label", "快速编辑动态画布当前段落");
+        const editor = document.createElement("div");
+        editor.className = "quick-text-editor";
+        editor.contentEditable = "true";
+        editor.spellcheck = true;
+        editor.setAttribute("role", "textbox");
+        editor.setAttribute("aria-multiline", "true");
+        editor.setAttribute("aria-label", "快速编辑当前段落");
+        editor.innerHTML = block.sourceElement.innerHTML;
+        const hint = document.createElement("div");
+        hint.className = "quick-edit-hint";
+        hint.id = `quick-edit-hint-${blockIndex}`;
+        hint.textContent = "Enter 换行 · Ctrl／Cmd＋Enter 提交 · Esc 取消 · 失焦提交";
+        editor.setAttribute("aria-describedby", hint.id);
+        shell.append(editor, hint);
+        const stageWidth = Math.max(240, layoutStage.clientWidth || layoutStageWidth || 1100);
+        const inset = Math.min(26, Math.max(12, stageWidth * .06));
+        shell.style.left = `${inset}px`;
+        shell.style.top = `${Math.max(12, block.startY - 8)}px`;
+        shell.style.width = `${Math.max(160, stageWidth - inset * 2)}px`;
+        const sourceStyle = getComputedStyle(block.sourceElement);
+        editor.style.fontFamily = sourceStyle.fontFamily;
+        editor.style.fontSize = sourceStyle.fontSize;
+        editor.style.fontWeight = sourceStyle.fontWeight;
+        editor.style.fontStyle = sourceStyle.fontStyle;
+        editor.style.textAlign = sourceStyle.textAlign;
+        editor.style.minHeight = `${Math.max(52, Math.min(210, block.endY - block.startY + 12))}px`;
+        block.tokens.forEach(token => token.element.classList.add("is-quick-edit-hidden"));
+        layoutTextLayer.appendChild(shell);
+        layoutTextLayer.classList.add("is-quick-editing");
+        activeQuickEditor = {
+          block, blockIndex, sourceElement: block.sourceElement, shell, editor,
+          originalHtml: sanitiseQuickTextHtml(block.sourceElement.innerHTML), composing: false, pendingBlur: false, finished: false
+        };
+        updateQuickEditAffordances();
+        editor.addEventListener("compositionstart", () => {
+          if (activeQuickEditor?.editor === editor) activeQuickEditor.composing = true;
+        });
+        editor.addEventListener("compositionend", () => {
+          const active = activeQuickEditor;
+          if (!active || active.editor !== editor) return;
+          active.composing = false;
+          if (active.pendingBlur) window.setTimeout(() => {
+            if (activeQuickEditor === active && !shell.contains(document.activeElement)) finishQuickTextEdit(true);
+          }, 0);
+        });
+        editor.addEventListener("keydown", event => {
+          const active = activeQuickEditor;
+          if (!active || active.editor !== editor) return;
+          if (active.composing || event.isComposing || event.keyCode === 229) {
+            event.stopPropagation();
+            return;
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            finishQuickTextEdit(false);
+            return;
+          }
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            event.stopPropagation();
+            finishQuickTextEdit(true);
+            return;
+          }
+          if (event.key === "Enter") {
+            event.preventDefault();
+            insertLayoutPlainTextAtSelection("\n", editor);
+          }
+          event.stopPropagation();
+        });
+        editor.addEventListener("paste", event => {
+          event.preventDefault();
+          insertLayoutPlainTextAtSelection(event.clipboardData?.getData("text/plain") || "", editor);
+        });
+        editor.addEventListener("drop", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          announce("快速编辑仅接受键盘输入和纯文本粘贴；已阻止拖入文件或富媒体。", true);
+        });
+        editor.addEventListener("beforeinput", event => {
+          if (event.inputType === "insertFromDrop") event.preventDefault();
+        });
+        editor.addEventListener("blur", () => window.setTimeout(() => {
+          const active = activeQuickEditor;
+          if (!active || active.editor !== editor || shell.contains(document.activeElement)) return;
+          if (active.composing) {
+            active.pendingBlur = true;
+            return;
+          }
+          finishQuickTextEdit(true);
+        }, 0));
+        editor.focus({ preventScroll: true });
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        if (layoutStatus) layoutStatus.textContent = "正在快速编辑当前段落：Ctrl／Cmd＋Enter 提交，Esc 取消，失焦提交。";
+      }
+
+      function beginLayoutInteraction(event, object, mode) {
+        const allowed = mode === "move" ? canMoveLayoutObjects() : canResizeLayoutObjects();
+        if (!allowed || (event.pointerType === "mouse" && event.button !== 0)) return;
+        if (mode === "move" && event.target.closest("td,th,.layout-table-wrap,button,select,[contenteditable='true']")) return;
+        if (activeQuickEditor) finishQuickTextEdit(true);
+        event.preventDefault();
+        event.stopPropagation();
+        const startZIndex = object.zIndex;
+        object.zIndex = ++layoutTopZ;
+        renderLayoutObjectTransform(object);
+        object.element?.focus({ preventScroll: true });
+        try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch (error) { /* pointer capture is optional */ }
+        layoutInteraction = {
+          pointerId: event.pointerId,
+          captureTarget: event.currentTarget,
+          object,
+          mode,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startX: object.x,
+          startY: object.y,
+          startWidth: object.width,
+          startHeight: object.height,
+          startZIndex,
+          pending: null,
+          changed: false
+        };
+        object.element?.classList.add(mode === "move" ? "is-moving" : "is-resizing");
+      }
+
+      function moveLayoutInteraction(event) {
+        if (!layoutInteraction || event.pointerId !== layoutInteraction.pointerId) return;
+        event.preventDefault();
+        const interaction = layoutInteraction;
+        const object = interaction.object;
+        const deltaX = event.clientX - interaction.startClientX;
+        const deltaY = event.clientY - interaction.startClientY;
+        if (Math.abs(deltaX) < .5 && Math.abs(deltaY) < .5) return;
+        const stageWidth = Math.max(240, layoutStage.clientWidth || layoutStageWidth || 1100);
+        if (interaction.mode === "move") {
+          interaction.pending = {
+            x: layoutClamp(interaction.startX + deltaX, 12, Math.max(12, stageWidth - object.width - 12)),
+            y: layoutClamp(interaction.startY + deltaY, 12, Math.max(12, layoutStage.clientHeight - object.height - 12))
+          };
+        } else {
+          interaction.pending = {
+            width: layoutClamp(interaction.startWidth + deltaX, layoutMinimumObjectWidth(stageWidth), Math.max(layoutMinimumObjectWidth(stageWidth), stageWidth - object.x - 12)),
+            height: layoutClamp(interaction.startHeight + deltaY, 220, 560)
+          };
+        }
+        if (!layoutInteractionFrame) layoutInteractionFrame = requestAnimationFrame(applyLayoutInteractionFrame);
+      }
+
+      function applyLayoutInteractionFrame() {
+        layoutInteractionFrame = 0;
+        if (!layoutInteraction?.pending) return;
+        layoutInteraction.changed = true;
+        Object.assign(layoutInteraction.object, layoutInteraction.pending);
+        layoutInteraction.pending = null;
+        renderLayoutObjectTransform(layoutInteraction.object);
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+      }
+
+      function finishLayoutInteraction(event, cancelled = false) {
+        if (!layoutInteraction || (event && event.pointerId !== layoutInteraction.pointerId)) return;
+        const interaction = layoutInteraction;
+        if (layoutInteractionFrame) {
+          cancelAnimationFrame(layoutInteractionFrame);
+          layoutInteractionFrame = 0;
+          applyLayoutInteractionFrame();
+        }
+        layoutInteraction = null;
+        try {
+          if (interaction.captureTarget?.hasPointerCapture?.(interaction.pointerId)) {
+            interaction.captureTarget.releasePointerCapture(interaction.pointerId);
+          }
+        } catch (error) { /* capture may already be lost after blur or visibility change */ }
+        interaction.object.element?.classList.remove("is-moving", "is-resizing");
+        if (!interaction.changed) {
+          interaction.object.zIndex = interaction.startZIndex;
+          renderLayoutObjectTransform(interaction.object);
+        }
+        renderLayoutObjectView(interaction.object);
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+        if (!cancelled && interaction.changed) {
+          commitHistory(interaction.mode === "move"
+            ? (editorEnabled ? "移动数据对象" : "排版演示拖动数据对象")
+            : (editorEnabled ? "调整数据对象大小" : "排版演示调整数据对象大小"));
+          if (layoutStatus) layoutStatus.textContent = interaction.mode === "move"
+            ? "对象位置已更新，文字避让结果已重新计算。"
+            : "对象尺寸已更新，文字与关系连线已同步重排。";
+        }
+      }
+
+      function handleLayoutObjectKeydown(event, object) {
+        if (!canMoveLayoutObjects() || !event.key.startsWith("Arrow")) return;
+        if (event.target.closest("td,th,button,select,[contenteditable='true']")) return;
+        const step = event.shiftKey ? 48 : 16;
+        const stageWidth = Math.max(240, layoutStage.clientWidth || layoutStageWidth || 1100);
+        if (event.key === "ArrowLeft") object.x -= step;
+        if (event.key === "ArrowRight") object.x += step;
+        if (event.key === "ArrowUp") object.y -= step;
+        if (event.key === "ArrowDown") object.y += step;
+        object.x = layoutClamp(object.x, 12, Math.max(12, stageWidth - object.width - 12));
+        object.y = layoutClamp(object.y, 12, Math.max(12, layoutStage.clientHeight - object.height - 12));
+        object.zIndex = ++layoutTopZ;
+        event.preventDefault();
+        renderLayoutObjectTransform(object);
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+        queueLayoutKeyboardHistory("键盘移动数据对象");
+      }
+
+      function queueLayoutKeyboardHistory(label) {
+        clearTimeout(layoutKeyboardHistoryTimer);
+        layoutKeyboardHistoryTimer = window.setTimeout(() => {
+          layoutKeyboardHistoryTimer = 0;
+          commitHistory(label);
+        }, 260);
+      }
+
+      function deleteLayoutObject(object) {
+        if (!editorEnabled || !object) return;
+        if (activeLayoutCellEdit?.object === object) finishActiveLayoutCell(false);
+        layoutObjects = layoutObjects.filter(candidate => candidate !== object);
+        connectors = connectors.filter(connection => connection.from !== object.id && connection.to !== object.id);
+        connectorResizeObserver?.unobserve(object.element);
+        object.element?.remove();
+        refreshConnectableElements();
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+        commitHistory("删除数据对象");
+        announce(`已删除“${object.title}”，相关孤立连线也已清理。`);
+      }
+
+      function insertLayoutTable() {
+        if (!editorEnabled || layoutObjects.length >= 12) {
+          if (layoutObjects.length >= 12) announce("动态画布最多保留 12 个数据对象。", true);
+          return;
+        }
+        finishActiveLayoutCell(false);
+        const index = layoutObjects.length + 1;
+        const stageWidth = Math.max(240, layoutStage.clientWidth || layoutStageWidth || 1100);
+        const raw = {
+          id: `layout-data-${Date.now()}-${index}`,
+          title: `合成账户表 ${index}`,
+          stageWidth,
+          x: Math.max(12, stageWidth - 410 - 28 - (index % 3) * 18),
+          y: 78 + (index % 5) * 44,
+          width: Math.min(410, Math.max(220, stageWidth - 24)),
+          height: 300,
+          wrapMargin: 22,
+          zIndex: ++layoutTopZ,
+          viewMode: "table",
+          chartType: "column",
+          tableData: defaultLayoutTable(index)
+        };
+        const object = normaliseLayoutObject(raw, index, stageWidth);
+        layoutObjects.push(object);
+        createLayoutObjectElement(object);
+        refreshConnectableElements();
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+        commitHistory("插入合成表格");
+        object.element?.focus({ preventScroll: true });
+        const firstCell = object.element?.querySelector("td");
+        firstCell?.focus({ preventScroll: true });
+        if (layoutStatus) layoutStatus.textContent = "已插入合成表格。双击单元格编辑，拖动标题栏移动，右下角调整大小。";
+        announce("已在动态画布中插入合成表格；数据只存在当前页面内存中，保存或导出后才会保留。", true);
+      }
+
+      function resizeDynamicLayoutToStage() {
+        if (!layoutStage) return;
+        const nextWidth = Math.max(240, Math.round(layoutStage.clientWidth || 0));
+        if (!nextWidth || Math.abs(nextWidth - layoutStageWidth) < 2) return;
+        const previousWidth = Math.max(240, layoutStageWidth || nextWidth);
+        const ratio = nextWidth / previousWidth;
+        layoutStageWidth = nextWidth;
+        layoutObjects.forEach(object => {
+          const minimumWidth = layoutMinimumObjectWidth(nextWidth);
+          object.x = layoutClamp(object.x * ratio, 12, Math.max(12, nextWidth - minimumWidth - 12));
+          object.width = layoutClamp(object.width * ratio, minimumWidth, Math.max(minimumWidth, nextWidth - object.x - 12));
+          object.x = layoutClamp(object.x, 12, Math.max(12, nextWidth - object.width - 12));
+          object.stageWidth = nextWidth;
+          renderLayoutObjectTransform(object);
+          if (object.viewMode === "chart") renderLayoutObjectView(object);
+        });
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+      }
+
+      function bindDynamicLayoutControls() {
+        byId("layout-scroll-to")?.addEventListener("click", () => {
+          byId("dynamic-layout")?.scrollIntoView({ behavior: reducedMotionQuery.matches ? "auto" : "smooth", block: "start" });
+        });
+        byId("layout-add-table")?.addEventListener("click", insertLayoutTable);
+        byId("layout-add-table-inline")?.addEventListener("click", insertLayoutTable);
+        layoutSource?.addEventListener("input", () => {
+          clearTimeout(layoutSourceTimer);
+          layoutSourceTimer = window.setTimeout(() => {
+            rebuildDynamicText();
+            if (layoutStatus) layoutStatus.textContent = "画布文字已更新，并按当前数据对象重新避让。";
+          }, 120);
+        });
+        layoutTextLayer?.addEventListener("dblclick", event => {
+          if (!isLayoutDemoActive() || connectionMode || activeQuickEditor) return;
+          const token = event.target.closest?.(".layout-flow-token");
+          if (!token || token.classList.contains("is-space") || token.classList.contains("is-break")) return;
+          const blockIndex = Number(token.dataset.blockIndex);
+          if (!Number.isInteger(blockIndex)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          beginQuickTextEdit(blockIndex);
+        });
+        layoutTextLayer?.addEventListener("keydown", event => {
+          if (!isLayoutDemoActive() || connectionMode || !["Enter", "F2"].includes(event.key)) return;
+          const trigger = event.target.closest?.('[data-quick-edit-trigger="true"]');
+          if (!trigger) return;
+          const blockIndex = Number(trigger.dataset.blockIndex);
+          if (!Number.isInteger(blockIndex)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          beginQuickTextEdit(blockIndex);
+        });
+        layoutTextLayer?.addEventListener("pointerdown", event => {
+          if (!isLayoutDemoActive() || !["touch", "pen"].includes(event.pointerType)) return;
+          const token = event.target.closest?.(".layout-flow-token:not(.is-space):not(.is-break)");
+          if (!token) return;
+          quickTapCandidate = { pointerId: event.pointerId, blockIndex: Number(token.dataset.blockIndex), x: event.clientX, y: event.clientY };
+        }, { passive: true });
+        layoutTextLayer?.addEventListener("pointerup", event => {
+          const candidate = quickTapCandidate;
+          quickTapCandidate = null;
+          if (!candidate || candidate.pointerId !== event.pointerId || !isLayoutDemoActive()) return;
+          if (Math.hypot(event.clientX - candidate.x, event.clientY - candidate.y) > 12) {
+            lastQuickTap = null;
+            return;
+          }
+          const now = performance.now();
+          if (lastQuickTap && lastQuickTap.blockIndex === candidate.blockIndex && now - lastQuickTap.time < 450) {
+            lastQuickTap = null;
+            event.preventDefault();
+            event.stopPropagation();
+            beginQuickTextEdit(candidate.blockIndex);
+            return;
+          }
+          lastQuickTap = { blockIndex: candidate.blockIndex, time: now };
+        });
+        layoutTextLayer?.addEventListener("pointercancel", () => { quickTapCandidate = null; });
+        window.addEventListener("pointermove", moveLayoutInteraction, { passive: false });
+        window.addEventListener("pointerup", finishLayoutInteraction);
+        window.addEventListener("pointercancel", finishLayoutInteraction);
+        window.addEventListener("blur", () => {
+          finishLayoutInteraction(null);
+          const active = activeQuickEditor;
+          if (!active) return;
+          if (active.composing) active.pendingBlur = true;
+          else finishQuickTextEdit(true);
+        });
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) return;
+          finishLayoutInteraction(null);
+          const active = activeQuickEditor;
+          if (!active) return;
+          if (active.composing) active.pendingBlur = true;
+          else finishQuickTextEdit(true);
+        });
+        if ("ResizeObserver" in window) {
+          layoutResizeObserver = new ResizeObserver(resizeDynamicLayoutToStage);
+          layoutResizeObserver.observe(layoutStage);
+        }
+        scheduleDynamicLayout();
+      }
+
+      function updateConnectionSummary() {
+        const custom = connectors.filter(item => item.kind === "custom");
+        const descriptions = custom.map(item => {
+          const from = endpointElement(item.from);
+          const to = endpointElement(item.to);
+          return `${from ? endpointLabel(from) : item.from} 到 ${to ? endpointLabel(to) : item.to}`;
+        });
+        connectionSummary.textContent = custom.length
+          ? `当前有 ${custom.length} 条自定义连线：${descriptions.join("；")}`
+          : "当前没有自定义连线；Decision Episode 的五条结构连线保持可见。";
+      }
+
+      function connectorGeometry(fromElement, toElement) {
+        const fromRect = fromElement.getBoundingClientRect();
+        const toRect = toElement.getBoundingClientRect();
+        const scrollX = window.scrollX;
+        const scrollY = window.scrollY;
+        const from = {
+          left: fromRect.left + scrollX, right: fromRect.right + scrollX,
+          top: fromRect.top + scrollY, bottom: fromRect.bottom + scrollY,
+          cx: fromRect.left + scrollX + fromRect.width / 2,
+          cy: fromRect.top + scrollY + fromRect.height / 2
+        };
+        const to = {
+          left: toRect.left + scrollX, right: toRect.right + scrollX,
+          top: toRect.top + scrollY, bottom: toRect.bottom + scrollY,
+          cx: toRect.left + scrollX + toRect.width / 2,
+          cy: toRect.top + scrollY + toRect.height / 2
+        };
+        if (to.top > from.bottom + 16) {
+          const mid = (from.bottom + to.top) / 2;
+          return `M ${from.cx.toFixed(1)} ${from.bottom.toFixed(1)} C ${from.cx.toFixed(1)} ${mid.toFixed(1)}, ${to.cx.toFixed(1)} ${mid.toFixed(1)}, ${to.cx.toFixed(1)} ${to.top.toFixed(1)}`;
+        }
+        if (from.top > to.bottom + 16) {
+          const mid = (to.bottom + from.top) / 2;
+          return `M ${from.cx.toFixed(1)} ${from.top.toFixed(1)} C ${from.cx.toFixed(1)} ${mid.toFixed(1)}, ${to.cx.toFixed(1)} ${mid.toFixed(1)}, ${to.cx.toFixed(1)} ${to.bottom.toFixed(1)}`;
+        }
+        if (to.cx >= from.cx) {
+          const bend = Math.max(38, Math.abs(to.left - from.right) * .5);
+          return `M ${from.right.toFixed(1)} ${from.cy.toFixed(1)} C ${(from.right + bend).toFixed(1)} ${from.cy.toFixed(1)}, ${(to.left - bend).toFixed(1)} ${to.cy.toFixed(1)}, ${to.left.toFixed(1)} ${to.cy.toFixed(1)}`;
+        }
+        const bend = Math.max(38, Math.abs(from.left - to.right) * .5);
+        return `M ${from.left.toFixed(1)} ${from.cy.toFixed(1)} C ${(from.left - bend).toFixed(1)} ${from.cy.toFixed(1)}, ${(to.right + bend).toFixed(1)} ${to.cy.toFixed(1)}, ${to.right.toFixed(1)} ${to.cy.toFixed(1)}`;
+      }
+
+      function drawConnectors() {
+        redrawFrame = 0;
+        connectorPaths.replaceChildren();
+        const width = Math.max(document.documentElement.clientWidth, document.documentElement.scrollWidth);
+        const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+        connectorLayer.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        connectorLayer.style.height = `${height}px`;
+        document.body.classList.toggle("connectors-active", connectorsVisible);
+        if (!connectorsVisible) {
+          updateConnectionSummary();
+          return;
+        }
+        connectors.forEach(connection => {
+          const from = endpointElement(connection.from);
+          const to = endpointElement(connection.to);
+          if (!from || !to || from === to) return;
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", connectorGeometry(from, to));
+          path.setAttribute("marker-end", connection.kind === "custom" ? "url(#connector-arrow-custom)" : "url(#connector-arrow)");
+          path.dataset.connectionId = connection.id;
+          if (connection.kind === "custom") path.classList.add("is-custom");
+          connectorPaths.appendChild(path);
+        });
+        updateConnectionSummary();
+      }
+
+      function scheduleConnectorDraw() {
+        if (redrawFrame) return;
+        redrawFrame = requestAnimationFrame(drawConnectors);
+      }
+
+      function segmentText(text) {
+        if (typeof Intl !== "undefined" && Intl.Segmenter) {
+          const segmenter = new Intl.Segmenter("zh-CN", { granularity: "word" });
+          return Array.from(segmenter.segment(text), item => item.segment);
+        }
+        return text.match(/\s+|[A-Za-z0-9]+|[\u3400-\u9fff]|./gu) || [];
+      }
+
+      function wrapElementTokens(element) {
+        let tokenIndex = 0;
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+          acceptNode(node) {
+            if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+            if (node.parentElement?.closest("script,style,pre,code,textarea,select,button,.dynamic-token")) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        });
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(node => {
+          const fragment = document.createDocumentFragment();
+          segmentText(node.nodeValue).forEach(segment => {
+            if (/^\s+$/u.test(segment)) {
+              fragment.appendChild(document.createTextNode(segment));
+              return;
+            }
+            const span = document.createElement("span");
+            span.className = "dynamic-token";
+            span.dataset.dynamicKey = `${element.dataset.editId}:${tokenIndex++}`;
+            span.textContent = segment;
+            fragment.appendChild(span);
+          });
+          node.replaceWith(fragment);
+        });
+      }
+
+      function animateTokensFromCache(initial = false) {
+        if (motionEffect !== "flow" || editorEnabled || reducedMotionQuery.matches) return;
+        const tokens = Array.from(document.querySelectorAll(".dynamic-token"));
+        tokens.forEach((token, index) => {
+          const rect = token.getBoundingClientRect();
+          const next = { x: rect.left + window.scrollX, y: rect.top + window.scrollY };
+          const previous = tokenPositionCache.get(token.dataset.dynamicKey);
+          tokenPositionCache.set(token.dataset.dynamicKey, next);
+          if (!token.animate) return;
+          if (previous) {
+            const dx = previous.x - next.x;
+            const dy = previous.y - next.y;
+            if (Math.abs(dx) > .5 || Math.abs(dy) > .5) {
+              token.animate(
+                [{ transform: `translate(${dx}px, ${dy}px)`, opacity: .72 }, { transform: "translate(0, 0)", opacity: 1 }],
+                { duration: 620, delay: Math.min(index * 4, 120), easing: "cubic-bezier(.2, 1.35, .3, 1)" }
+              );
+            }
+          } else if (initial) {
+            token.animate(
+              [{ transform: "translateY(10px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
+              { duration: 440, delay: Math.min(index * 5, 150), easing: "cubic-bezier(.2, .8, .2, 1)" }
+            );
+          }
+        });
+      }
+
+      function refreshFlowTokens(initial = false) {
+        unwrapDynamicTokens(document);
+        if (motionEffect !== "flow" || editorEnabled || reducedMotionQuery.matches) return;
+        editableElements.filter(element => element !== layoutSource).forEach(wrapElementTokens);
+        requestAnimationFrame(() => {
+          animateTokensFromCache(initial);
+          scheduleConnectorDraw();
+        });
+      }
+
+      function setupMotion() {
+        motionObserver?.disconnect();
+        motionObserver = null;
+        htmlRoot.classList.remove("motion-ready");
+        htmlRoot.dataset.motionEffect = motionEffect;
+        motionControl.value = motionEffect;
+        document.querySelectorAll('[data-motion-item="true"]').forEach(item => item.classList.add("is-motion-visible"));
+        if (editorEnabled || reducedMotionQuery.matches || motionEffect === "none") {
+          unwrapDynamicTokens(document);
+          return;
+        }
+        if (motionEffect === "flow") {
+          refreshFlowTokens(true);
+          return;
+        }
+        unwrapDynamicTokens(document);
+        if (!("IntersectionObserver" in window)) return;
+        const items = Array.from(document.querySelectorAll('[data-motion-item="true"]'));
+        items.forEach(item => item.classList.remove("is-motion-visible"));
+        motionObserver = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("is-motion-visible");
+            motionObserver.unobserve(entry.target);
+          });
+        }, { rootMargin: "0px 0px -8% 0px", threshold: .08 });
+        items.forEach(item => motionObserver.observe(item));
+        requestAnimationFrame(() => htmlRoot.classList.add("motion-ready"));
+      }
+
+      function captureSnapshot() {
+        return {
+          content: editableElements.map(element => ({
+            id: element.dataset.editId,
+            html: cleanEditableHtml(element),
+            style: element.getAttribute("style") || ""
+          })),
+          connectors: connectors.map(item => ({ ...item })),
+          connectorsVisible,
+          motionEffect,
+          layout: captureDynamicLayoutState(),
+          demo: window.hyperunitDemo?.captureState?.() || {}
+        };
+      }
+
+      function updateHistoryButtons() {
+        const historyAvailable = editorEnabled || isLayoutDemoActive();
+        undoButton.disabled = !historyAvailable || historyIndex <= 0;
+        redoButton.disabled = !historyAvailable || historyIndex < 0 || historyIndex >= history.length - 1;
+      }
+
+      function commitHistory(label, force = false) {
+        if (applyingHistory) return;
+        clearTimeout(historyTimer);
+        historyTimer = 0;
+        const snapshot = captureSnapshot();
+        const signature = JSON.stringify(snapshot);
+        if (!force && history[historyIndex]?.signature === signature) return;
+        history = history.slice(0, historyIndex + 1);
+        history.push({ label, signature, snapshot });
+        if (history.length > HISTORY_LIMIT) history.shift();
+        historyIndex = history.length - 1;
+        if (!force && !runtimeOnlyHistoryLabels.has(label)) markLocalModified();
+        updateHistoryButtons();
+      }
+
+      function queueHistory(label = "编辑文字") {
+        clearTimeout(historyTimer);
+        historyTimer = window.setTimeout(() => {
+          historyTimer = 0;
+          commitHistory(label);
+        }, 500);
+      }
+
+      function applySnapshot(snapshot) {
+        finishQuickTextEdit(false);
+        finishActiveLayoutCell(true);
+        clearTimeout(layoutKeyboardHistoryTimer);
+        layoutKeyboardHistoryTimer = 0;
+        applyingHistory = true;
+        savedRange = null;
+        unwrapDynamicTokens(document);
+        snapshot.content.forEach(item => {
+          const element = editableElements.find(candidate => candidate.dataset.editId === item.id);
+          if (!element) return;
+          element.innerHTML = sanitiseHtml(item.html);
+          if (item.style) element.setAttribute("style", item.style);
+          else element.removeAttribute("style");
+        });
+        connectors = snapshot.connectors.map(item => ({ ...item }));
+        connectorsVisible = snapshot.connectorsVisible !== false;
+        motionEffect = ["flow", "reveal", "focus", "none"].includes(snapshot.motionEffect) ? snapshot.motionEffect : "flow";
+        applyDynamicLayoutState(snapshot.layout || parsedState.layout || {});
+        window.hyperunitDemo?.applyState?.(snapshot.demo || {});
+        byId("toggle-connectors").setAttribute("aria-pressed", String(connectorsVisible));
+        byId("toggle-connectors").textContent = connectorsVisible ? "隐藏连线" : "显示连线";
+        setupMotion();
+        scheduleConnectorDraw();
+        applyingHistory = false;
+      }
+
+      function undo() {
+        finishQuickTextEdit(true);
+        finishActiveLayoutCell(false);
+        clearTimeout(layoutKeyboardHistoryTimer);
+        layoutKeyboardHistoryTimer = 0;
+        commitHistory("当前编辑");
+        if (historyIndex <= 0) return;
+        historyIndex -= 1;
+        applySnapshot(history[historyIndex].snapshot);
+        updateHistoryButtons();
+        announce(`已撤销：${history[historyIndex + 1].label}`);
+      }
+
+      function redo() {
+        finishQuickTextEdit(true);
+        finishActiveLayoutCell(false);
+        const hasQueuedHistory = Boolean(historyTimer || layoutKeyboardHistoryTimer);
+        clearTimeout(historyTimer);
+        historyTimer = 0;
+        clearTimeout(layoutKeyboardHistoryTimer);
+        layoutKeyboardHistoryTimer = 0;
+        // 活动快速编辑和单元格编辑会自行提交；这里只刷新仍在防抖窗口内的真实输入。
+        // 不可无条件提交：响应式应用快照后，布局坐标可能被当前画布宽度归一化，
+        // 即使正文未变也会形成不同签名并错误截断 redo 分支。
+        if (hasQueuedHistory) commitHistory("当前编辑");
+        if (historyIndex >= history.length - 1) return;
+        historyIndex += 1;
+        applySnapshot(history[historyIndex].snapshot);
+        updateHistoryButtons();
+        announce(`已重做：${history[historyIndex].label}`);
+      }
+
+      function selectionElement() {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return null;
+        const node = selection.anchorNode?.nodeType === Node.ELEMENT_NODE ? selection.anchorNode : selection.anchorNode?.parentElement;
+        return node?.closest?.('[data-editorial="true"]') || null;
+      }
+
+      function rememberSelection() {
+        const selection = window.getSelection();
+        const element = selectionElement();
+        if (!element || !editorEnabled || !selection.rangeCount) return;
+        savedRange = selection.getRangeAt(0).cloneRange();
+      }
+
+      function restoreSelection() {
+        if (!savedRange || !document.contains(savedRange.commonAncestorContainer)) return false;
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(savedRange);
+        selectionElement()?.focus({ preventScroll: true });
+        return true;
+      }
+
+      function pulseEditedElement() {
+        const element = selectionElement();
+        if (!element) return;
+        element.classList.remove("text-just-updated");
+        requestAnimationFrame(() => {
+          element.classList.add("text-just-updated");
+          window.setTimeout(() => element.classList.remove("text-just-updated"), 560);
+        });
+      }
+
+      function runCommand(command, value = null, label = "调整格式") {
+        if (!editorEnabled || !restoreSelection()) {
+          announce("请先开启编辑并在正文中选择文字。", true);
+          return;
+        }
+        document.execCommand(command, false, value);
+        rememberSelection();
+        pulseEditedElement();
+        commitHistory(label);
+        scheduleConnectorDraw();
+      }
+
+      function insertLink() {
+        if (!editorEnabled || !restoreSelection()) {
+          announce("请先选择需要建立链接的文字。", true);
+          return;
+        }
+        const requested = window.prompt("输入 #锚点、相对文件路径或安全网址：", "#whitepaper");
+        if (requested === null) return;
+        const href = safeLinkHref(requested);
+        if (!href) {
+          announce("链接地址为空或包含不允许的协议。", true);
+          return;
+        }
+        restoreSelection();
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+        if (range.collapsed) {
+          const anchor = document.createElement("a");
+          anchor.href = href;
+          anchor.rel = "noreferrer";
+          anchor.textContent = href;
+          range.insertNode(anchor);
+          range.selectNodeContents(anchor);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          savedRange = range.cloneRange();
+        } else {
+          document.execCommand("createLink", false, href);
+          selectionElement()?.querySelectorAll("a").forEach(anchor => {
+            const clean = safeLinkHref(anchor.getAttribute("href"));
+            if (clean) anchor.setAttribute("href", clean);
+            anchor.setAttribute("rel", "noreferrer");
+            anchor.removeAttribute("target");
+          });
+          rememberSelection();
+        }
+        commitHistory("插入链接");
+        announce(`已插入链接：${href}`);
+      }
+
+      function removeLink() {
+        if (!editorEnabled || !restoreSelection()) {
+          announce("请把光标放到需要移除的链接中。", true);
+          return;
+        }
+        const selection = window.getSelection();
+        const node = selection.anchorNode?.nodeType === Node.ELEMENT_NODE ? selection.anchorNode : selection.anchorNode?.parentElement;
+        const anchor = node?.closest?.("a");
+        if (!anchor || !anchor.closest('[data-editorial="true"]')) {
+          announce("当前光标不在可编辑链接中。", true);
+          return;
+        }
+        anchor.replaceWith(...anchor.childNodes);
+        commitHistory("移除链接");
+        announce("已移除当前链接。");
+      }
+
+      function checkLinks() {
+        let broken = 0;
+        let checked = 0;
+        document.querySelectorAll("main a[href], footer a[href]").forEach(anchor => {
+          checked += 1;
+          anchor.removeAttribute("data-link-status");
+          const href = safeLinkHref(anchor.getAttribute("href"));
+          let invalidAnchor = false;
+          if (href.startsWith("#")) {
+            try { invalidAnchor = !document.getElementById(decodeURIComponent(href.slice(1))); }
+            catch (error) { invalidAnchor = true; }
+          }
+          if (!href || invalidAnchor) {
+            broken += 1;
+            anchor.dataset.linkStatus = "broken";
+          }
+        });
+        announce(broken ? `已检查 ${checked} 个链接，发现 ${broken} 个当前页失效锚点。` : `已检查 ${checked} 个链接，当前页锚点均有效。`, Boolean(broken));
+      }
+
+      function setConnectionMode(enabled) {
+        connectionMode = Boolean(enabled && editorEnabled);
+        connectionSource?.classList.remove("is-connection-source");
+        connectionSource = null;
+        document.body.classList.toggle("connection-mode", connectionMode);
+        updateLayoutDemoMode();
+        byId("add-connector").setAttribute("aria-pressed", String(connectionMode));
+        byId("add-connector").textContent = connectionMode ? "取消连接" : "连接模块";
+        connectableElements.forEach(element => {
+          if (connectionMode && !element.hasAttribute("tabindex")) {
+            element.tabIndex = 0;
+            element.dataset.connectionTabAdded = "true";
+          } else if (!connectionMode && element.dataset.connectionTabAdded === "true") {
+            element.removeAttribute("tabindex");
+            delete element.dataset.connectionTabAdded;
+          }
+        });
+        if (connectionMode) announce("连接模式：请选择起点模块，再选择终点模块。按 Esc 可取消。");
+      }
+
+      function chooseConnectionEndpoint(element) {
+        if (!connectionMode || !element) return;
+        if (!connectionSource) {
+          connectionSource = element;
+          connectionSource.classList.add("is-connection-source");
+          announce(`已选择起点“${endpointLabel(element)}”，请选择终点。`);
+          return;
+        }
+        if (element === connectionSource) {
+          announce("起点和终点不能是同一个模块。", true);
+          return;
+        }
+        const from = endpointReference(connectionSource);
+        const to = endpointReference(element);
+        if (connectors.some(item => item.from === from && item.to === to)) {
+          announce("这两个模块之间已经存在同方向连线。", true);
+          return;
+        }
+        connectors.push({
+          id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          from, to, kind: "custom"
+        });
+        setConnectionMode(false);
+        scheduleConnectorDraw();
+        commitHistory("新增模块连线");
+        announce(`已连接“${endpointLabel(connectionSource || endpointElement(from))}”到“${endpointLabel(element)}”。`);
+      }
+
+      function removeLastCustomConnector() {
+        const index = connectors.map(item => item.kind).lastIndexOf("custom");
+        if (index < 0) {
+          announce("当前没有可撤销的自定义连线。", true);
+          return;
+        }
+        connectors.splice(index, 1);
+        scheduleConnectorDraw();
+        commitHistory("删除模块连线");
+        announce("已移除最后一条自定义连线。");
+      }
+
+      function toggleConnectors() {
+        connectorsVisible = !connectorsVisible;
+        const button = byId("toggle-connectors");
+        button.setAttribute("aria-pressed", String(connectorsVisible));
+        button.textContent = connectorsVisible ? "隐藏连线" : "显示连线";
+        scheduleConnectorDraw();
+        commitHistory(connectorsVisible ? "显示连线" : "隐藏连线");
+        announce(connectorsVisible ? "关系连线已显示。" : "关系连线已隐藏，连接定义仍保留。");
+      }
+
+      const editOnlyControls = [
+        "format-bold", "format-italic", "format-underline", "align-left", "align-center", "align-right",
+        "editor-font-size", "editor-font-family", "insert-link", "remove-link", "add-connector",
+        "remove-last-connector", "history-undo", "history-redo", "layout-add-table", "layout-add-table-inline"
+      ];
+
+      function updateEditorControls() {
+        editOnlyControls.forEach(id => {
+          const control = byId(id);
+          if (control) control.disabled = !editorEnabled;
+        });
+        layoutObjectLayer?.querySelectorAll(".layout-chart-type,.layout-object-remove").forEach(control => {
+          control.disabled = !editorEnabled;
+        });
+        editorToggle.setAttribute("aria-pressed", String(editorEnabled));
+        editorToggle.textContent = editorEnabled ? "完成编辑" : "开启编辑";
+        updateHistoryButtons();
+      }
+
+      function setEditorEnabled(enabled) {
+        if (documentMode === "readonly") return;
+        finishQuickTextEdit(true);
+        finishActiveLayoutCell(false);
+        editorEnabled = Boolean(enabled);
+        setConnectionMode(false);
+        unwrapDynamicTokens(document);
+        document.body.classList.toggle("editor-enabled", editorEnabled);
+        updateLayoutDemoMode();
+        resizeDynamicLayoutToStage();
+        editableElements.forEach(element => {
+          element.setAttribute("contenteditable", String(editorEnabled));
+          element.setAttribute("spellcheck", String(editorEnabled));
+        });
+        updateLayoutAccessibility();
+        updateEditorControls();
+        if (editorEnabled) {
+          setEditorialDemoExpanded(true);
+          htmlRoot.classList.remove("motion-ready");
+          document.querySelectorAll('[data-motion-item="true"]').forEach(item => item.classList.add("is-motion-visible"));
+          announce("编辑模式已开启：可修改文字、插入表格、拖动数据对象，并使用格式、链接和连线工具。");
+        } else {
+          commitHistory("完成编辑");
+          savedRange = null;
+          setupMotion();
+          if (isLayoutDemoActive()) {
+            announce(localModified
+              ? "排版演示状态 · 可拖动对象、双击画布文字快编；当前为非官方本地修改。"
+              : "排版演示状态 · 可拖动对象并双击画布文字快速编辑。", localModified);
+          } else {
+            announce(localModified
+              ? "阅读模式 · 本地修改仍在内存中；另存或导出后均为非官方副本。"
+              : "阅读模式 · 官方 V0.3 源文件未修改。", localModified);
+          }
+        }
+        scheduleDynamicLayout();
+        scheduleConnectorDraw();
+      }
+
+      function serialisedEditorState(nextRevision) {
+        return {
+          schema: "hyperunit-page-editor/2",
+          revision: nextRevision,
+          motion_effect: motionEffect,
+          demo: window.hyperunitDemo?.captureState?.() || {},
+          connectors_visible: connectorsVisible,
+          connectors: connectors.map(item => ({ id: item.id, from: item.from, to: item.to, kind: item.kind === "custom" ? "custom" : "default" })),
+          layout: captureDynamicLayoutState()
+        };
+      }
+
+      function buildExportHtml(mode = "editable") {
+        if (documentMode === "readonly") return "";
+        finishQuickTextEdit(true);
+        finishActiveLayoutCell(false);
+        clearTimeout(layoutKeyboardHistoryTimer);
+        layoutKeyboardHistoryTimer = 0;
+        stateRevision += 1;
+        const state = serialisedEditorState(stateRevision);
+        const exportId = syntheticExportId("export");
+        const replicaId = syntheticExportId(mode === "readonly" ? "readonly-replica" : "editable-replica");
+        state.artifact = {
+          role: mode === "readonly" ? "non-authoritative-readonly-snapshot" : "non-authoritative-editable-replica",
+          replica_id: replicaId,
+          export_id: exportId,
+          derived_from: "hu.example.treasury.weekly-bank-balance-prepublish-check"
+        };
+        editorStateNode.textContent = jsonForInlineScript(state);
+        const clone = document.documentElement.cloneNode(true);
+        clone.dataset.editorMode = mode;
+        clone.classList.remove("motion-ready");
+        clone.removeAttribute("data-motion-effect");
+        const cloneBody = clone.querySelector("body");
+        cloneBody?.classList.remove("editor-enabled", "layout-demo-active", "connection-mode", "connectors-active");
+        cloneBody?.classList.add("local-modified");
+        unwrapDynamicTokens(clone);
+        clone.querySelectorAll("[contenteditable]").forEach(element => element.setAttribute("contenteditable", "false"));
+        clone.querySelectorAll(".is-connection-source,.text-just-updated,.is-motion-visible").forEach(element => {
+          element.classList.remove("is-connection-source", "text-just-updated", "is-motion-visible");
+        });
+        clone.querySelectorAll("[data-connection-tab-added]").forEach(element => {
+          element.removeAttribute("tabindex");
+          element.removeAttribute("data-connection-tab-added");
+        });
+        clone.querySelectorAll("[data-link-status]").forEach(element => element.removeAttribute("data-link-status"));
+        clone.querySelector("#connector-paths")?.replaceChildren();
+        clone.querySelector("#layout-text-layer")?.replaceChildren();
+        clone.querySelector("#layout-object-layer")?.replaceChildren();
+        clone.querySelector("#layout-semantic-document")?.replaceChildren();
+        const cloneState = clone.querySelector("#page-editor-state");
+        if (cloneState) cloneState.textContent = jsonForInlineScript(state);
+        const cloneModeMeta = clone.querySelector('meta[name="hyperunit-editor-mode"]');
+        if (cloneModeMeta) cloneModeMeta.setAttribute("content", mode === "readonly" ? "readonly" : "editable");
+        const cloneRoleMeta = clone.querySelector('meta[name="hyperunit-artifact-role"]');
+        if (cloneRoleMeta) cloneRoleMeta.setAttribute("content", mode === "readonly" ? "non-authoritative-readonly-snapshot" : "non-authoritative-editable-replica");
+        const cloneManifest = clone.querySelector("#hyperunit-manifest");
+        if (cloneManifest) {
+          let manifest = {};
+          try { manifest = JSON.parse(cloneManifest.textContent || "{}"); } catch (error) { manifest = {}; }
+          const originalUnitId = String(manifest.unit_id || "hu.example.treasury.weekly-bank-balance-prepublish-check");
+          manifest.status = "non-authoritative-replica";
+          manifest.artifact_role = mode === "readonly" ? "non-authoritative-readonly-snapshot" : "non-authoritative-editable-replica";
+          manifest.authoritative = false;
+          manifest.replica_id = replicaId;
+          manifest.export_id = exportId;
+          manifest.exported_at = new Date().toISOString();
+          manifest.derived_from = originalUnitId;
+          manifest.source_publication = { version: "V0.3", artifact_role: "authoritative-public-example-source" };
+          manifest.single_write_authority = "none (replica is non-authoritative)";
+          manifest.export_mode = mode;
+          cloneManifest.textContent = jsonForInlineScript(manifest);
+          const cloneManifestView = clone.querySelector("#manifest-view");
+          if (cloneManifestView) cloneManifestView.textContent = JSON.stringify(manifest, null, 2);
+        }
+        const cloneToolbar = clone.querySelector("#editor-toolbar");
+        cloneToolbar?.classList.add("is-collapsed");
+        const cloneStatus = clone.querySelector("#editor-status");
+        if (cloneStatus) cloneStatus.textContent = mode === "readonly"
+          ? "只读非官方快照"
+          : "阅读模式 · 本地已修改／非官方可编辑副本";
+        const cloneToggle = clone.querySelector("#editor-toggle");
+        if (cloneToggle) {
+          cloneToggle.textContent = "开启编辑";
+          cloneToggle.setAttribute("aria-pressed", "false");
+        }
+        const cloneCollapse = clone.querySelector("#editor-collapse");
+        if (cloneCollapse) {
+          cloneCollapse.textContent = "展开工具";
+          cloneCollapse.setAttribute("aria-expanded", "false");
+        }
+        const cloneBanner = clone.querySelector("#artifact-status-banner");
+        if (cloneBanner) cloneBanner.textContent = `${mode === "readonly" ? "只读快照" : "本地已修改"}／非官方副本 · non-authoritative-replica · replica_id=${replicaId}`;
+        const cloneEditorialSection = clone.querySelector("#dynamic-layout");
+        cloneEditorialSection?.classList.add("is-collapsed");
+        const cloneEditorialToggle = clone.querySelector("#editorial-demo-toggle");
+        if (cloneEditorialToggle) {
+          cloneEditorialToggle.setAttribute("aria-expanded", "false");
+          cloneEditorialToggle.textContent = mode === "readonly" ? "查看排版快照" : "展开本地排版演示";
+        }
+        if (mode === "readonly") {
+          clone.querySelectorAll("#save-current,#export-editable,#export-readonly").forEach(control => control.remove());
+        }
+        const cloneFooter = clone.querySelector("#release-footer");
+        if (cloneFooter) cloneFooter.textContent = `HyperUnit Network · V0.3 ${mode === "readonly" ? "只读快照" : "可编辑副本"} · 非官方／非权威`;
+        const cloneChip = clone.querySelector("#editing-chip");
+        if (cloneChip) cloneChip.textContent = mode === "readonly" ? "只读快照 · 非官方副本" : "本地可编辑副本 · 非官方／非权威";
+        if (mode === "readonly") applyReadonlyCopy(clone);
+        return `<!doctype html>\n${clone.outerHTML}`;
+      }
+
+      function syntheticExportId(prefix) {
+        const bytes = new Uint32Array(3);
+        if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+        else {
+          bytes[0] = Date.now() >>> 0;
+          bytes[1] = Math.floor(Math.random() * 0xffffffff) >>> 0;
+          bytes[2] = Math.floor(Math.random() * 0xffffffff) >>> 0;
+        }
+        return `${prefix}-${Date.now().toString(36)}-${Array.from(bytes, value => value.toString(36)).join("-")}`;
+      }
+
+      function applyReadonlyCopy(clone) {
+        const heading = clone.querySelector("#dynamic-layout h2");
+        if (heading) heading.textContent = "本地动态排版的冻结快照";
+        const intro = clone.querySelector("#dynamic-layout .section-intro");
+        if (intro) intro.textContent = "以下内容是导出时冻结的本地排版快照；此文件不提供文字编辑、表格插入、对象拖动、缩放、连线或再次导出能力。";
+        const scope = clone.querySelector("#dynamic-layout .editorial-scope");
+        if (scope) scope.textContent = "只读边界：排版对象与合成数据按导出时状态展示；该快照是非官方、非权威副本，不属于 Managed Run。";
+        const layoutStatusCopy = clone.querySelector("#layout-status");
+        if (layoutStatusCopy) layoutStatusCopy.textContent = "只读快照：排版对象已冻结。";
+        const layoutHelpCopy = clone.querySelector("#dynamic-layout .layout-help");
+        if (layoutHelpCopy) layoutHelpCopy.textContent = "只读快照：对象不可移动、缩放或编辑。";
+        const noScriptEditorial = clone.querySelector("#noscript-editorial-note");
+        if (noScriptEditorial) noScriptEditorial.textContent = "无脚本阅读：这是非官方只读快照；排版对象已冻结，核心账户案例与治理说明仍可阅读。";
+        const boundaryTitle = clone.querySelector("#boundary-title");
+        if (boundaryTitle) boundaryTitle.textContent = "Portable View 可读、可运行合成场景，但没有编辑或执行权限";
+        const boundaryIntro = clone.querySelector("#boundary-intro");
+        if (boundaryIntro) boundaryIntro.textContent = "这是非官方只读快照。内容安全策略禁止后台联网、外部嵌入与表单提交；页面应用不提供作者编辑、再次保存或导出入口，但不声称阻止浏览器自身的“另存为”功能。";
+        const allowedList = clone.querySelector("#boundary-allowed ul");
+        if (allowedList) {
+          allowedList.replaceChildren(...[
+            "阅读导出时冻结的公开案例内容",
+            "切换固定合成场景并生成内存中的 Claim／Decision／Reality UI 记录",
+            "查看冻结的表格、图表与关系连线",
+            "打开同目录 Word 白皮书链接",
+            "确认本快照的 non-authoritative-replica 标记"
+          ].map(textValue => {
+            const item = clone.ownerDocument.createElement("li");
+            item.textContent = textValue;
+            return item;
+          }));
+        }
+      }
+
+      function downloadHtml(html, fileName) {
+        if (documentMode === "readonly" || !html) return;
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+
+      async function saveCurrentHtml() {
+        if (documentMode === "readonly") return;
+        const html = buildExportHtml("editable");
+        const suggestedName = "账户管理_超元发布版_V0.3_非官方可编辑副本.html";
+        if (!("showSaveFilePicker" in window)) {
+          downloadHtml(html, suggestedName);
+          announce("浏览器不支持文件选择保存，已下载非官方可编辑副本。");
+          return;
+        }
+        try {
+          if (!savedFileHandle) {
+            savedFileHandle = await window.showSaveFilePicker({
+              suggestedName,
+              types: [{ description: "HTML 文件", accept: { "text/html": [".html"] } }]
+            });
+          }
+          const writable = await savedFileHandle.createWritable();
+          await writable.write(html);
+          await writable.close();
+          announce("非官方可编辑副本已按你的显式授权保存；文件句柄只在本次打开期间保留，不会持久化。")
+        } catch (error) {
+          if (error?.name === "AbortError") announce("已取消保存，当前内存修改仍保留。", true);
+          else {
+            savedFileHandle = null;
+            announce("保存未完成，请改用“导出可编辑副本”。", true);
+          }
+        }
+      }
+
+      function bindToolbar() {
+        editorialDemoToggle?.addEventListener("click", () => {
+          setEditorialDemoExpanded(editorialDemoSection?.classList.contains("is-collapsed"));
+        });
+        editorToggle.addEventListener("click", () => setEditorEnabled(!editorEnabled));
+        collapseButton.addEventListener("click", () => {
+          const collapsed = toolbar.classList.toggle("is-collapsed");
+          collapseButton.setAttribute("aria-expanded", String(!collapsed));
+          collapseButton.textContent = collapsed ? "展开工具" : "收起工具";
+        });
+        undoButton.addEventListener("click", undo);
+        redoButton.addEventListener("click", redo);
+        ["format-bold", "format-italic", "format-underline", "align-left", "align-center", "align-right", "insert-link", "remove-link"].forEach(id => {
+          byId(id)?.addEventListener("mousedown", event => event.preventDefault());
+        });
+        byId("format-bold").addEventListener("click", () => runCommand("bold", null, "加粗文字"));
+        byId("format-italic").addEventListener("click", () => runCommand("italic", null, "设置斜体"));
+        byId("format-underline").addEventListener("click", () => runCommand("underline", null, "添加下划线"));
+        byId("align-left").addEventListener("click", () => runCommand("justifyLeft", null, "左对齐"));
+        byId("align-center").addEventListener("click", () => runCommand("justifyCenter", null, "居中对齐"));
+        byId("align-right").addEventListener("click", () => runCommand("justifyRight", null, "右对齐"));
+        byId("editor-font-size").addEventListener("change", event => runCommand("fontSize", event.target.value, "调整字号"));
+        byId("editor-font-family").addEventListener("change", event => {
+          if (event.target.value) runCommand("fontName", event.target.value, "调整字体");
+        });
+        byId("insert-link").addEventListener("click", insertLink);
+        byId("remove-link").addEventListener("click", removeLink);
+        byId("check-links").addEventListener("click", checkLinks);
+        motionControl.addEventListener("change", () => {
+          motionEffect = motionControl.value;
+          setupMotion();
+          commitHistory("切换文字动效");
+          announce(motionEffect === "none" ? "文字动效已关闭。" : `文字动效已切换为“${motionControl.selectedOptions[0].textContent}”。`);
+        });
+        byId("add-connector").addEventListener("click", () => setConnectionMode(!connectionMode));
+        byId("remove-last-connector").addEventListener("click", removeLastCustomConnector);
+        byId("toggle-connectors").addEventListener("click", toggleConnectors);
+        byId("save-current")?.addEventListener("click", () => {
+          if (documentMode === "readonly") return;
+          saveCurrentHtml();
+        });
+        byId("export-editable")?.addEventListener("click", () => {
+          if (documentMode === "readonly") return;
+          downloadHtml(buildExportHtml("editable"), "账户管理_超元发布版_V0.3_非官方可编辑副本.html");
+          announce("已导出可继续编辑的非官方、非权威 HTML 副本。");
+        });
+        byId("export-readonly")?.addEventListener("click", () => {
+          if (documentMode === "readonly") return;
+          downloadHtml(buildExportHtml("readonly"), "账户管理_超元发布版_V0.3_非官方只读快照.html");
+          announce("已导出隐藏编辑工具的非官方只读快照；合成场景仍可运行。");
+        });
+      }
+
+      window.addEventListener("hyperunit-demo-change", event => {
+        commitHistory(event.detail?.label || "更新合成案例状态");
+      });
+
+      editableElements.forEach(element => {
+        element.addEventListener("input", () => {
+          element.classList.remove("text-just-updated");
+          requestAnimationFrame(() => element.classList.add("text-just-updated"));
+          window.setTimeout(() => element.classList.remove("text-just-updated"), 560);
+          queueHistory("编辑文字");
+          scheduleConnectorDraw();
+        });
+        element.addEventListener("paste", event => {
+          if (!editorEnabled) return;
+          event.preventDefault();
+          const text = event.clipboardData?.getData("text/plain") || "";
+          if (document.execCommand("insertText", false, text)) return;
+          const selection = window.getSelection();
+          if (!selection?.rangeCount) return;
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          const textNode = document.createTextNode(text);
+          range.insertNode(textNode);
+          range.setStartAfter(textNode);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          queueHistory("粘贴纯文本");
+          scheduleConnectorDraw();
+        });
+        element.addEventListener("drop", event => {
+          if (!editorEnabled) return;
+          event.preventDefault();
+          announce("为避免意外嵌入文件或外部数据，请使用纯文本粘贴。", true);
+        });
+      });
+
+      document.addEventListener("selectionchange", rememberSelection);
+      document.addEventListener("click", event => {
+        if (!connectionMode) return;
+        const endpoint = event.target.closest?.('[data-connectable="true"]');
+        if (!endpoint || toolbar.contains(endpoint)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        chooseConnectionEndpoint(endpoint);
+      }, true);
+      document.addEventListener("keydown", event => {
+        if (event.isComposing || event.keyCode === 229) return;
+        if (connectionMode && event.key === "Escape") {
+          event.preventDefault();
+          setConnectionMode(false);
+          announce("已取消连接模式。")
+          return;
+        }
+        if (connectionMode && (event.key === "Enter" || event.key === " ")) {
+          const endpoint = event.target.closest?.('[data-connectable="true"]');
+          if (endpoint) {
+            event.preventDefault();
+            chooseConnectionEndpoint(endpoint);
+            return;
+          }
+        }
+        const modifier = event.ctrlKey || event.metaKey;
+        if (!modifier) return;
+        const key = event.key.toLowerCase();
+        if (key === "s") {
+          if (documentMode === "readonly") return;
+          event.preventDefault();
+          saveCurrentHtml();
+        } else if (key === "z" && event.shiftKey && (editorEnabled || isLayoutDemoActive())) {
+          event.preventDefault();
+          redo();
+        } else if (key === "z" && (editorEnabled || isLayoutDemoActive())) {
+          event.preventDefault();
+          undo();
+        } else if (key === "y" && (editorEnabled || isLayoutDemoActive())) {
+          event.preventDefault();
+          redo();
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          if (!("ResizeObserver" in window)) resizeDynamicLayoutToStage();
+          if (motionEffect === "flow" && !editorEnabled && !reducedMotionQuery.matches) {
+            requestAnimationFrame(() => animateTokensFromCache(false));
+          }
+          scheduleConnectorDraw();
+        }, 90);
+      });
+      document.querySelectorAll("details").forEach(details => details.addEventListener("toggle", scheduleConnectorDraw));
+      reducedMotionQuery.addEventListener?.("change", setupMotion);
+      if ("ResizeObserver" in window) {
+        connectorResizeObserver = new ResizeObserver(scheduleConnectorDraw);
+        connectableElements.forEach(element => connectorResizeObserver.observe(element));
+      }
+      if ("MutationObserver" in window) {
+        const mutationObserver = new MutationObserver(scheduleConnectorDraw);
+        mutationObserver.observe(byId("main"), { childList: true, subtree: true, characterData: true });
+      }
+      if (document.fonts?.ready) document.fonts.ready.then(scheduleConnectorDraw).catch(() => {});
+
+      bindToolbar();
+      bindDynamicLayoutControls();
+      byId("toggle-connectors").setAttribute("aria-pressed", String(connectorsVisible));
+      byId("toggle-connectors").textContent = connectorsVisible ? "隐藏连线" : "显示连线";
+      if (documentMode === "readonly") editorToggle.disabled = true;
+      updateEditorControls();
+      commitHistory("初始状态", true);
+      setupMotion();
+      scheduleConnectorDraw();
+    })();
+  </script>
+</body>
+</html>
