@@ -1,8 +1,8 @@
 # HyperUnit Network
 
-Private pre-release repository for the bilingual HyperUnit Network white paper and its interactive companion demonstration.
+HyperUnit Network (超元网络) is a responsibility-centered framework for capability digitization, decision traceability, organizational learning, and reality validation. This repository contains the bilingual white paper and interactive companion demonstrations.
 
-HyperUnit Network proposes a responsibility-centered approach to capability digitization. A HyperUnit has a stable identity and an explicit Responsibility; it preserves epistemic boundaries among Fact, Configuration, Claim, Decision, Reality Fact, and Evidence; and it connects an earlier judgment to later real-world validation. The aim is to make organizational capability traceable, reviewable, reusable, and evolvable without treating files, models, or AI outputs as inherently authoritative.
+A HyperUnit has a stable identity and an explicit Responsibility; it preserves epistemic boundaries among Fact, Configuration, Claim, Decision, Reality Fact, and Evidence; and it connects an earlier judgment to later real-world validation. The aim is to make organizational capability traceable, reviewable, reusable, and evolvable without treating files, models, or AI outputs as inherently authoritative.
 
 This repository is being prepared for a planned public release in September 2026. It is currently **private and under review**.
 
