@@ -6,6 +6,13 @@ HyperUnit Network proposes a responsibility-centered approach to capability digi
 
 This repository is being prepared for a planned public release in September 2026. It is currently **private and under review**.
 
+## Authorship
+
+- **Author:** Wei Roy Wang
+- **Project:** HyperUnit Network
+- **GitHub:** [@aspttwwly](https://github.com/aspttwwly)
+- **Copyright:** © 2026 Wei Roy Wang. All rights reserved.
+
 ## Contents
 
 | Language | White paper | Interactive companion demo |
@@ -74,5 +81,4 @@ Get-Content .\SHA256SUMS.txt | ForEach-Object {
 
 ## License and Distribution
 
-No open-source license is granted in this private pre-release. All rights are reserved. Do not redistribute, publish, or represent these materials as a normative protocol specification without authorization from the HyperUnit Network project.
-
+No open-source license is granted in this private pre-release. All rights are reserved. Do not redistribute, publish, or represent these materials as a normative protocol specification without authorization from Wei Roy Wang and the HyperUnit Network project.

@@ -4,6 +4,11 @@
 
 Prepared in August 2026 for a planned public release in September 2026.
 
+**Author:** Wei Roy Wang  
+**Project:** HyperUnit Network  
+**GitHub:** [@aspttwwly](https://github.com/aspttwwly)  
+**Copyright:** © 2026 Wei Roy Wang. All rights reserved.
+
 ### Included Artifacts
 
 - Chinese white paper, content version `v1.2`.
@@ -35,4 +40,3 @@ The companion demo applies the white paper's minimum closed loop to pre-publicat
 ### Repository Status
 
 This repository is private and under review. No public release, redistribution permission, or open-source license is implied by access to this repository.
-
