@@ -1,13 +1,12 @@
-# Private Pre-Release Notes
+# Release Notes
 
-## V0.3 — Bilingual Review Package
+## V0.3 — Initial Bilingual Public Release
 
-Prepared in August 2026 for a planned public release in September 2026.
-
-**Author:** Wei Roy Wang  
-**Project:** HyperUnit Network  
-**GitHub:** [@aspttwwly](https://github.com/aspttwwly)  
-**Copyright:** © 2026 Wei Roy Wang. All rights reserved.
+- **Release date:** September 1, 2026
+- **Author:** Wei Roy Wang
+- **Project:** HyperUnit Network
+- **GitHub:** [@aspttwwly](https://github.com/aspttwwly)
+- **Copyright:** © 2026 Wei Roy Wang. All rights reserved.
 
 ### Included Artifacts
 
@@ -24,7 +23,7 @@ The companion demo applies the white paper's minimum closed loop to pre-publicat
 - Both Word files link to the corresponding same-directory HTML demo.
 - All nine images in each Word file include title and description alternative text.
 - Both HTML files contain valid embedded JSON and JavaScript.
-- Both HTML files retain the restrictive Content Security Policy and contain no network or persistent-storage API calls.
+- Both HTML files retain a restrictive Content Security Policy and contain no network or persistent-storage API calls.
 - The English HTML contains no Chinese characters and links back to the English Word white paper.
 - Desktop and 375-pixel mobile regression checks found no horizontal overflow.
 - All four synthetic scenarios, human Decision gating, Reality validation, local layout demonstration, and authoring controls passed browser regression.
@@ -36,7 +35,12 @@ The companion demo applies the white paper's minimum closed loop to pre-publicat
 - The demo uses synthetic data only and performs no real business execution.
 - The HTML carrier is not a substitute for Runtime governance, Persistence, Registry, security controls, or enterprise systems.
 - Protocol fields and implementation conformance remain subject to the planned Core Protocol Specification.
+- Public access does not grant an open-source license or redistribution permission.
 
-### Repository Status
+### Version Map
 
-This repository is private and under review. No public release, redistribution permission, or open-source license is implied by access to this repository.
+- Release package: `V0.3`
+- White paper content: `v1.2`
+- Companion demos: `V0.3`
+- Example Manifest: `0.1-draft`, non-normative
+- Example Capability: `prepublish-check@0.1.0`

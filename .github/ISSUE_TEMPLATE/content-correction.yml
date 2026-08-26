@@ -1,0 +1,47 @@
+name: Content correction
+description: Report a factual, language, citation, or link issue in the white paper or repository documentation.
+title: "[Content]: "
+labels:
+  - documentation
+body:
+  - type: dropdown
+    id: artifact
+    attributes:
+      label: Affected artifact
+      options:
+        - English white paper
+        - Chinese white paper
+        - README or repository documentation
+        - Citation metadata
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Give the page, section, heading, or link where the issue appears.
+      placeholder: "Example: English white paper, Section 4.2, page 18"
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current content or problem
+      description: Describe the issue without reproducing unnecessary portions of the document.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed correction
+      description: Explain the correction and cite a source when the change depends on an external fact.
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Submission check
+      options:
+        - label: I have checked that this issue has not already been reported.
+          required: true

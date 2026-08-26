@@ -1,0 +1,57 @@
+name: Demo problem
+description: Report a reproducible problem in one of the interactive companion demos.
+title: "[Demo]: "
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: demo
+    attributes:
+      label: Demo
+      options:
+        - English demo V0.3
+        - Chinese demo V0.3
+        - Both demos
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and operating system
+      placeholder: "Example: Chrome 140 on Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the downloaded HTML file
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Additional evidence
+      description: Add screenshots or console output if they help. Remove any sensitive information first.
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Data boundary
+      options:
+        - label: I did not include real account information, credentials, or other sensitive data.
+          required: true

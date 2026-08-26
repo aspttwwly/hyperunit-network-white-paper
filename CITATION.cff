@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use or discuss this work, please cite the white paper as below."
+type: software
+title: "HyperUnit Network White Paper and Companion Demos"
+version: "0.3"
+date-released: 2026-09-01
+authors:
+  - family-names: "Wang"
+    given-names: "Wei Roy"
+abstract: >-
+  A bilingual white paper and interactive companion demonstration for a
+  responsibility-centered architecture spanning capability digitization,
+  decision traceability, AI governance, organizational learning, data
+  provenance, and reality validation.
+keywords:
+  - HyperUnit Network
+  - capability digitization
+  - digital responsibility network
+  - decision intelligence
+  - decision traceability
+  - organizational learning
+  - AI governance
+  - responsible AI
+  - data provenance
+  - human-in-the-loop
+repository-code: "https://github.com/aspttwwly/hyperunit-network-white-paper"
+url: "https://github.com/aspttwwly/hyperunit-network-white-paper"
+preferred-citation:
+  type: report
+  title: "HyperUnit Network White Paper: From Information Digitization to Reality-Validated Capability Digitization"
+  version: "1.2"
+  year: 2026
+  month: 9
+  authors:
+    - family-names: "Wang"
+      given-names: "Wei Roy"
+  url: "https://github.com/aspttwwly/hyperunit-network-white-paper"

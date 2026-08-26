@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Conceptual and research discussion
+    url: https://github.com/aspttwwly/hyperunit-network-white-paper/discussions
+    about: Use Discussions for broader questions, applications, and design critique.
+  - name: Private security report
+    url: https://github.com/aspttwwly/hyperunit-network-white-paper/security/advisories/new
+    about: Report a potentially sensitive vulnerability privately.
