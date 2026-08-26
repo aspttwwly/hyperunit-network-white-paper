@@ -46,7 +46,8 @@
 
 - [发布说明](./RELEASE_NOTES.md)：发布范围、验证结果与适用边界。
 - [引用元数据](./CITATION.cff)：便于 GitHub 和文献工具识别的引用信息。
-- [SHA-256 校验值](./SHA256SUMS.txt)：四个主要发布工件的完整性哈希。
+- [仓库文件 SHA-256 校验值](./SHA256SUMS.txt)：使用仓库内文件名的完整性哈希。
+- [Release 附件 SHA-256 校验值](./RELEASE_ASSET_SHA256SUMS.txt)：同一组哈希，使用便于下载的 `EN` / `ZH-CN` 文件名。
 - [安全策略](./SECURITY.md)：私下报告安全问题的方式。
 
 ## 核心概念
@@ -140,7 +141,7 @@
 - 内嵌示例 Manifest：`0.1-draft`，非规范性；
 - 示例 Capability：`prepublish-check@0.1.0`。
 
-可在仓库根目录运行以下命令，验证四个主要工件：
+在仓库根目录使用 `SHA256SUMS.txt` 验证四个主要工件；如果从 [GitHub Releases](https://github.com/aspttwwly/hyperunit-network-white-paper/releases/tag/v0.3) 下载了带语言标记的附件，请改用 `RELEASE_ASSET_SHA256SUMS.txt`。
 
 ```bash
 sha256sum -c SHA256SUMS.txt

@@ -15,6 +15,8 @@
 - Chinese interactive companion demo, version `V0.3`.
 - English interactive companion demo, version `V0.3`.
 
+Release downloads use portable ASCII filenames with explicit `EN` and `ZH-CN` language tags. Their content is identical to the corresponding repository artifacts; use `RELEASE_ASSET_SHA256SUMS.txt` to verify downloaded assets.
+
 The companion demo applies the white paper's minimum closed loop to pre-publication validation of weekly bank account balances. It uses synthetic data to make Responsibility, typed Inputs, Dependency Snapshot, Claim, human Decision, simulated Reality Fact, and Evidence visible in one portable example.
 
 ### Validation Completed

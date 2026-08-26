@@ -46,7 +46,8 @@ Supporting files:
 
 - [Release notes](./RELEASE_NOTES.md) — package scope, validation summary, and boundaries.
 - [Citation metadata](./CITATION.cff) — machine-readable citation information.
-- [SHA-256 checksums](./SHA256SUMS.txt) — integrity hashes for the four primary artifacts.
+- [Repository SHA-256 checksums](./SHA256SUMS.txt) — integrity hashes using the filenames stored in the repository.
+- [Release asset SHA-256 checksums](./RELEASE_ASSET_SHA256SUMS.txt) — the same hashes using the portable `EN` / `ZH-CN` download filenames.
 - [Security policy](./SECURITY.md) — how to report a security concern privately.
 
 ## Core Concepts
@@ -140,7 +141,7 @@ The version numbers describe different artifacts and should not be conflated:
 - embedded example Manifest: `0.1-draft` and non-normative;
 - example Capability: `prepublish-check@0.1.0`.
 
-Verify the four primary artifacts from the repository root:
+Verify the four primary artifacts from the repository root with `SHA256SUMS.txt`. If you downloaded the language-tagged assets from [GitHub Releases](https://github.com/aspttwwly/hyperunit-network-white-paper/releases/tag/v0.3), use `RELEASE_ASSET_SHA256SUMS.txt` instead.
 
 ```bash
 sha256sum -c SHA256SUMS.txt
